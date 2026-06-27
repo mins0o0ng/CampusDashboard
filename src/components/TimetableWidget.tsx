@@ -1,23 +1,21 @@
-// TimetableWidget.tsx
-// 용도: 인터랙티브 시간표 위젯. 강의 추가/수정/삭제 + localStorage 저장.
-//       빈 칸 클릭 → 추가 폼, 강의 블록 클릭 → 수정/삭제 폼.
-// 사용법: <TimetableWidget />  (props 없이 동작, 내부에서 store 로드)
-
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import type { ClassBlock, DayIndex, WidgetColor } from "../types";
 import { timetableStore } from "../lib/store";
 
 const DAYS = ["월", "화", "수", "목", "금"];
 const HOUR_START = 9;
 const HOUR_END = 18;
+const HOURS = HOUR_END - HOUR_START;
 const COLORS: Record<WidgetColor, { bg: string; text: string; ring: string }> = {
   indigo: { bg: "bg-indigo-50", text: "text-indigo-600", ring: "ring-indigo-200" },
   red: { bg: "bg-red-50", text: "text-red-500", ring: "ring-red-200" },
   green: { bg: "bg-green-50", text: "text-green-600", ring: "ring-green-200" },
   amber: { bg: "bg-amber-50", text: "text-amber-600", ring: "ring-amber-200" },
 };
+const COLOR_KEYS = Object.keys(COLORS) as WidgetColor[];
+const HOUR_SLOTS = Array.from({ length: HOURS }, (_, i) => i);
+const START_OPTIONS = Array.from({ length: HOURS }, (_, i) => HOUR_START + i);
 
-// 편집 폼 상태(신규 추가 또는 기존 수정)
 interface EditState {
   block: ClassBlock;
   isNew: boolean;
@@ -29,7 +27,7 @@ const emptyBlock = (day: DayIndex, start: number): ClassBlock => ({
   room: "",
   day,
   start,
-  end: start + 1,
+  end: Math.min(start + 1, HOUR_END),
   color: "indigo",
 });
 
@@ -37,25 +35,34 @@ export const TimetableWidget: React.FC = () => {
   const [classes, setClasses] = useState<ClassBlock[]>(() => timetableStore.load());
   const [edit, setEdit] = useState<EditState | null>(null);
 
-  const openNew = (day: DayIndex, start: number) =>
-    setEdit({ block: emptyBlock(day, start), isNew: true });
-  const openEdit = (block: ClassBlock) => setEdit({ block, isNew: false });
+  const openNew = useCallback((day: DayIndex, start: number) =>
+    setEdit({ block: emptyBlock(day, start), isNew: true }), []);
 
-  const save = () => {
+  const openEdit = useCallback((block: ClassBlock) =>
+    setEdit({ block, isNew: false }), []);
+
+  const save = useCallback(() => {
     if (!edit) return;
     const b = edit.block;
-    if (!b.subject.trim() || b.end <= b.start) return; // 최소 검증
-    setClasses(edit.isNew ? timetableStore.add(classes, b) : timetableStore.update(classes, b));
+    if (!b.subject.trim() || b.end <= b.start) return;
+    const clamped = { ...b, end: Math.min(b.end, HOUR_END) };
+    setClasses(edit.isNew ? timetableStore.add(classes, clamped) : timetableStore.update(classes, clamped));
     setEdit(null);
-  };
+  }, [edit, classes]);
 
-  const remove = () => {
+  const remove = useCallback(() => {
     if (!edit || edit.isNew) return;
     setClasses(timetableStore.remove(classes, edit.block.id));
     setEdit(null);
-  };
+  }, [edit, classes]);
 
-  const rows = HOUR_END - HOUR_START;
+  const closeModal = useCallback(() => setEdit(null), []);
+
+  const endOptions = useMemo(() => {
+    if (!edit) return [];
+    return Array.from({ length: HOURS }, (_, i) => HOUR_START + 1 + i)
+      .filter((h) => h > edit.block.start && h <= HOUR_END);
+  }, [edit?.block.start]);
 
   return (
     <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
@@ -67,7 +74,6 @@ export const TimetableWidget: React.FC = () => {
         <span className="text-[11px] font-semibold text-gray-400">2026-1학기 · 빈 칸 클릭해 추가</span>
       </header>
 
-      {/* 요일 헤더 */}
       <div className="grid grid-cols-[28px_repeat(5,1fr)] gap-1 mb-1">
         <div />
         {DAYS.map((d) => (
@@ -75,22 +81,18 @@ export const TimetableWidget: React.FC = () => {
         ))}
       </div>
 
-      {/* 그리드 본체 */}
       <div className="grid grid-cols-[28px_repeat(5,1fr)] gap-1">
-        {/* 시간 레이블 컬럼 */}
         <div className="flex flex-col">
-          {Array.from({ length: rows }).map((_, i) => (
+          {HOUR_SLOTS.map((i) => (
             <div key={i} className="h-9 text-[9px] text-gray-300 text-right pr-1 leading-9">
               {HOUR_START + i}
             </div>
           ))}
         </div>
 
-        {/* 요일별 컬럼 */}
         {DAYS.map((_, dayIdx) => (
           <div key={dayIdx} className="relative">
-            {/* 클릭 가능한 빈 슬롯 */}
-            {Array.from({ length: rows }).map((_, i) => (
+            {HOUR_SLOTS.map((i) => (
               <button
                 key={i}
                 onClick={() => openNew(dayIdx as DayIndex, HOUR_START + i)}
@@ -98,13 +100,13 @@ export const TimetableWidget: React.FC = () => {
                 aria-label={`${DAYS[dayIdx]} ${HOUR_START + i}시 강의 추가`}
               />
             ))}
-            {/* 강의 블록(절대 위치) */}
             {classes
               .filter((c) => c.day === dayIdx)
               .map((c) => {
-                const top = (c.start - HOUR_START) * 36; // 1시간 = 36px(h-9)
-                const height = (c.end - c.start) * 36 - 2;
-                const col = COLORS[c.color];
+                const clampedEnd = Math.min(c.end, HOUR_END);
+                const top = (c.start - HOUR_START) * 36;
+                const height = (clampedEnd - c.start) * 36 - 2;
+                const col = COLORS[c.color] ?? COLORS.indigo;
                 return (
                   <button
                     key={c.id}
@@ -121,9 +123,8 @@ export const TimetableWidget: React.FC = () => {
         ))}
       </div>
 
-      {/* 편집 모달 */}
       {edit && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setEdit(null)}>
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={closeModal}>
           <div className="bg-white rounded-xl p-5 w-72 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h4 className="text-sm font-bold text-gray-800 mb-3">{edit.isNew ? "강의 추가" : "강의 수정"}</h4>
             <div className="space-y-2.5">
@@ -153,18 +154,18 @@ export const TimetableWidget: React.FC = () => {
                   value={edit.block.start}
                   onChange={(e) => { const s = Number(e.target.value); setEdit({ ...edit, block: { ...edit.block, start: s, end: Math.max(edit.block.end, s + 1) } }); }}
                 >
-                  {Array.from({ length: HOUR_END - HOUR_START }).map((_, i) => <option key={i} value={HOUR_START + i}>{HOUR_START + i}시</option>)}
+                  {START_OPTIONS.map((h) => <option key={h} value={h}>{h}시</option>)}
                 </select>
                 <select
                   className="flex-1 border border-gray-200 rounded-lg px-2 py-2 text-[13px]"
                   value={edit.block.end}
                   onChange={(e) => setEdit({ ...edit, block: { ...edit.block, end: Number(e.target.value) } })}
                 >
-                  {Array.from({ length: HOUR_END - HOUR_START }).map((_, i) => HOUR_START + 1 + i).filter((h) => h > edit.block.start).map((h) => <option key={h} value={h}>{h}시</option>)}
+                  {endOptions.map((h) => <option key={h} value={h}>{h}시</option>)}
                 </select>
               </div>
               <div className="flex gap-2 pt-1">
-                {(Object.keys(COLORS) as WidgetColor[]).map((c) => (
+                {COLOR_KEYS.map((c) => (
                   <button
                     key={c}
                     onClick={() => setEdit({ ...edit, block: { ...edit.block, color: c } })}
@@ -178,7 +179,7 @@ export const TimetableWidget: React.FC = () => {
                 <button onClick={remove} className="text-[13px] text-red-500 font-medium">삭제</button>
               ) : <span />}
               <div className="flex gap-2">
-                <button onClick={() => setEdit(null)} className="text-[13px] text-gray-500 px-3 py-1.5">취소</button>
+                <button onClick={closeModal} className="text-[13px] text-gray-500 px-3 py-1.5">취소</button>
                 <button onClick={save} className="text-[13px] bg-indigo-600 text-white rounded-lg px-4 py-1.5 font-medium">저장</button>
               </div>
             </div>

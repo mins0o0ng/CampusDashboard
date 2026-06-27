@@ -17,9 +17,10 @@ import json
 import os
 import uuid
 from datetime import date, datetime
+from enum import Enum
 from typing import Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -27,19 +28,31 @@ from .db import get_conn, init_db
 
 app = FastAPI(title="Campus Board API", version="1.0.0")
 
+ALLOWED_ORIGINS = os.environ.get(
+    "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-DATA_DIR = os.environ.get(
-    "CAMPUS_DATA_DIR", os.path.join(os.path.dirname(__file__), "..", "..", "docs", "data")
+DATA_DIR = os.path.realpath(
+    os.environ.get(
+        "CAMPUS_DATA_DIR", os.path.join(os.path.dirname(__file__), "..", "..", "docs", "data")
+    )
 )
 
-# 모듈 로드 시 스키마 보장(idempotent) — get_conn 이 첫 호출에서 자동 보장하지만 명시.
 init_db()
+
+
+class ColorEnum(str, Enum):
+    indigo = "indigo"
+    red = "red"
+    green = "green"
+    amber = "amber"
 
 
 def current_user(x_user_id: Optional[str] = Header(default=None)) -> str:
@@ -55,7 +68,7 @@ class ClassIn(BaseModel):
     day: int = Field(ge=0, le=4)
     start: float = Field(ge=0, le=24)
     end: float = Field(ge=0, le=24)
-    color: str = Field(default="indigo")
+    color: ColorEnum = Field(default=ColorEnum.indigo)
 
     def validate_span(self) -> None:
         if self.end <= self.start:
@@ -85,7 +98,7 @@ def add_class(body: ClassIn, user: str = Depends(current_user)) -> dict:
     with get_conn() as conn:
         conn.execute(
             "INSERT INTO classes(id, user_id, subject, room, day, start, end, color) VALUES(?,?,?,?,?,?,?,?)",
-            (cid, user, body.subject, body.room, body.day, body.start, body.end, body.color),
+            (cid, user, body.subject, body.room, body.day, body.start, body.end, body.color.value),
         )
     return {"id": cid, **body.model_dump()}
 
@@ -102,7 +115,7 @@ def update_class(class_id: str, body: ClassIn, user: str = Depends(current_user)
             raise HTTPException(status_code=404, detail="강의를 찾을 수 없습니다.")
         conn.execute(
             "UPDATE classes SET subject=?, room=?, day=?, start=?, end=?, color=? WHERE id=? AND user_id=?",
-            (body.subject, body.room, body.day, body.start, body.end, body.color, class_id, user),
+            (body.subject, body.room, body.day, body.start, body.end, body.color.value, class_id, user),
         )
     return {"id": class_id, **body.model_dump()}
 
@@ -186,8 +199,15 @@ def cast_vote(poll_id: str, body: VoteIn, user: str = Depends(current_user)) -> 
 
 # ---------- 공지 / 학식 ----------
 
+ALLOWED_DATA_FILES = {"notices.json", "meal.json"}
+
+
 def _load_json(name: str) -> dict:
-    path = os.path.join(DATA_DIR, name)
+    if name not in ALLOWED_DATA_FILES:
+        return {}
+    path = os.path.realpath(os.path.join(DATA_DIR, name))
+    if not path.startswith(DATA_DIR):
+        return {}
     if not os.path.exists(path):
         return {}
     with open(path, encoding="utf-8") as f:
@@ -195,7 +215,7 @@ def _load_json(name: str) -> dict:
 
 
 @app.get("/api/notices")
-def get_notices(keyword: Optional[str] = None) -> dict:
+def get_notices(keyword: Optional[str] = Query(default=None, max_length=100)) -> dict:
     """공지 목록. keyword 지정 시 제목 필터."""
     data = _load_json("notices.json")
     notices = data.get("notices", [])
