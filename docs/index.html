@@ -127,7 +127,7 @@ function Poll(){
         );})}
     </div>
     <footer className="mt-3 flex items-center justify-between">
-      <p className="text-[11px] text-gray-400">{poll.total}명 중 {tv(poll)}명 참여 · {isC?"마감됨":"마감 D-"+dday(poll)}</p>
+      <p className="text-[11px] text-gray-400">{poll.total}명 중 {tv(poll)}명 참여 · {isC?"마감됨":dday(poll)===0?"D-Day":"마감 D-"+dday(poll)}</p>
       {!result&&<button onClick={submit} disabled={!sel} className="text-[12px] bg-amber-500 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-lg px-4 py-1.5 font-medium">투표하기</button>}
       {voted&&<span className="text-[11px] font-semibold text-amber-600">투표 완료 ✓</span>}
     </footer>
