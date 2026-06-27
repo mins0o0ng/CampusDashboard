@@ -1,9 +1,4 @@
-// PollWidget.tsx
-// 용도: 인터랙티브 투표 위젯. 선택 → 투표하기 → 결과 막대 + 중복투표 방지 + 마감 처리.
-//       투표 전에는 선택지만, 투표 후에는 실시간 백분율/막대. localStorage 로 내 투표 보존.
-// 사용법: <PollWidget />  (props 없이 동작, 내부에서 store 로드)
-
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import type { Poll } from "../types";
 import { pollStore, percent, totalVotes, dday, isClosed } from "../lib/store";
 
@@ -13,13 +8,20 @@ export const PollWidget: React.FC = () => {
 
   const voted = Boolean(poll.votedOptionId);
   const closed = isClosed(poll);
-  const showResult = voted || closed;       // 투표했거나 마감되면 결과 공개
+  const showResult = voted || closed;
   const remain = dday(poll);
+  const total = useMemo(() => totalVotes(poll), [poll]);
 
-  const submit = () => {
+  const submit = useCallback(() => {
     if (!selected) return;
     setPoll(pollStore.vote(poll, selected));
-  };
+  }, [poll, selected]);
+
+  const deadlineLabel = useMemo(() => {
+    if (closed) return "마감됨";
+    if (remain === 0) return "D-Day";
+    return `마감 D-${remain}`;
+  }, [closed, remain]);
 
   return (
     <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
@@ -33,10 +35,9 @@ export const PollWidget: React.FC = () => {
 
       <div className="space-y-2">
         {poll.options.map((o) => {
-          const p = percent(poll, o.id);
+          const p = percent(poll, o.id, total);
           const mine = poll.votedOptionId === o.id;
           if (showResult) {
-            // 결과 모드: 막대 + 백분율
             return (
               <div key={o.id}>
                 <div className="flex justify-between text-[11px] mb-1">
@@ -51,7 +52,6 @@ export const PollWidget: React.FC = () => {
               </div>
             );
           }
-          // 투표 모드: 선택지 버튼
           return (
             <button
               key={o.id}
@@ -71,7 +71,7 @@ export const PollWidget: React.FC = () => {
 
       <footer className="mt-3 flex items-center justify-between">
         <p className="text-[11px] text-gray-400">
-          {poll.total}명 중 {totalVotes(poll)}명 참여 · {closed ? "마감됨" : `마감 D-${remain}`}
+          {poll.total}명 중 {total}명 참여 · {deadlineLabel}
         </p>
         {!showResult && (
           <button

@@ -92,6 +92,9 @@ def get_conn() -> Iterator[sqlite3.Connection]:
     try:
         yield conn
         conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 

@@ -33,5 +33,5 @@ export interface Poll {
   options: PollOption[];
   total: number;       // 전체 투표 가능 인원
   deadline: string;    // ISO 날짜 (마감일)
-  votedOptionId?: string; // 내가 투표한 선택지(로컬). 없으면 미투표
+  votedOptionId?: string | null; // 내가 투표한 선택지. 백엔드는 null, 로컬은 undefined
 }

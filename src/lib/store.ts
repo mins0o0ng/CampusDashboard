@@ -1,15 +1,6 @@
-// store.ts
-// 용도: 시간표·투표 데이터 계층. 현재는 localStorage 기반 목(mock) 구현이지만,
-//       동일한 함수 시그니처를 서버 API(fetch)로 교체하면 백엔드 연동으로 바로 승격된다.
-//       → "자체DB" 기능의 프런트 계약(contract)을 먼저 고정하는 목적.
-// 사용법:
-//   import { timetableStore, pollStore } from "./lib/store";
-//   const classes = timetableStore.load();
-//   pollStore.vote(poll, optionId);
-
 import type { ClassBlock, Poll } from "../types";
 
-const NS = "campus."; // localStorage 키 접두사
+const NS = "campus.";
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -24,7 +15,7 @@ function write<T>(key: string, value: T): void {
   try {
     localStorage.setItem(NS + key, JSON.stringify(value));
   } catch {
-    /* 저장 실패(프라이빗 모드 등)는 무시 — 메모리 상태는 유지 */
+    /* 저장 실패(프라이빗 모드 등)는 무시 */
   }
 }
 
@@ -84,10 +75,9 @@ export const pollStore = {
   save(poll: Poll): void {
     write("poll." + poll.id, poll);
   },
-  // 투표하기: 중복 투표 방지 + 마감 검사. 결과 Poll 반환.
   vote(poll: Poll, optionId: string): Poll {
-    if (poll.votedOptionId) return poll;          // 이미 투표함
-    if (isClosed(poll)) return poll;              // 마감됨
+    if (poll.votedOptionId) return poll;
+    if (isClosed(poll)) return poll;
     const next: Poll = {
       ...poll,
       votedOptionId: optionId,
@@ -102,26 +92,26 @@ export const pollStore = {
 
 /* ============================ 파생 유틸 ============================ */
 
-// 총 득표수
+function todayMidnight(): Date {
+  return new Date(new Date().toDateString());
+}
+
 export function totalVotes(poll: Poll): number {
   return poll.options.reduce((s, o) => s + o.votes, 0);
 }
 
-// 선택지 백분율(정수). 득표 0이면 0.
-export function percent(poll: Poll, optionId: string): number {
-  const total = totalVotes(poll);
+export function percent(poll: Poll, optionId: string, precomputedTotal?: number): number {
+  const total = precomputedTotal ?? totalVotes(poll);
   if (total === 0) return 0;
   const v = poll.options.find((o) => o.id === optionId)?.votes ?? 0;
   return Math.round((v / total) * 100);
 }
 
-// 마감 여부
 export function isClosed(poll: Poll): boolean {
-  return new Date(poll.deadline) < new Date(new Date().toDateString());
+  return new Date(poll.deadline) < todayMidnight();
 }
 
-// D-day (남은 일수). 음수면 마감 경과.
 export function dday(poll: Poll): number {
-  const ms = new Date(poll.deadline).getTime() - new Date(new Date().toDateString()).getTime();
+  const ms = new Date(poll.deadline).getTime() - todayMidnight().getTime();
   return Math.ceil(ms / 86_400_000);
 }
