@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>캠퍼스 보드 — 시간표·투표 인터랙티브 데모</title>
+<!-- 빌드 없이 더블클릭으로 실행되는 데모. src/ 의 TimetableWidget·PollWidget 동작을 동일 로직으로 재현. -->
+<!-- localStorage 에 시간표/투표가 저장되어 새로고침해도 유지됨. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>body{font-family:Pretendard,'Apple SD Gothic Neo',-apple-system,sans-serif}</style>
+</head>
+<body class="bg-[#EBEEF3]">
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+const LS = { get:(k,f)=>{try{const v=localStorage.getItem('campus.'+k);return v?JSON.parse(v):f}catch{return f}}, set:(k,v)=>{try{localStorage.setItem('campus.'+k,JSON.stringify(v))}catch{}} };
+
+/* ===== 시간표 ===== */
+const DAYS=["월","화","수","목","금"], H0=9, H1=18;
+const TONE={indigo:["bg-indigo-50","text-indigo-600","ring-indigo-200"],red:["bg-red-50","text-red-500","ring-red-200"],green:["bg-green-50","text-green-600","ring-green-200"],amber:["bg-amber-50","text-amber-600","ring-amber-200"]};
+const SEED_TT=[
+ {id:"c1",subject:"알고리즘",room:"IT4-301",day:0,start:9,end:11,color:"indigo"},
+ {id:"c2",subject:"운영체제",room:"공대 211",day:2,start:9,end:10,color:"red"},
+ {id:"c3",subject:"소프트웨어공학",room:"IT1-103",day:1,start:11,end:12,color:"amber"},
+ {id:"c4",subject:"DB설계",room:"IT2-205",day:3,start:11,end:13,color:"green"},
+ {id:"c5",subject:"캡스톤디자인",room:"IT4-401",day:4,start:9,end:10,color:"indigo"},
+];
+
+function Timetable(){
+  const [cs,setCs]=useState(()=>LS.get('timetable',SEED_TT));
+  const [edit,setEdit]=useState(null);
+  const persist=(n)=>{setCs(n);LS.set('timetable',n);};
+  const rows=H1-H0;
+  const save=()=>{const b=edit.block; if(!b.subject.trim()||b.end<=b.start)return;
+    persist(edit.isNew?[...cs,{...b,id:'c'+Date.now()}]:cs.map(c=>c.id===b.id?b:c)); setEdit(null);};
+  const del=()=>{persist(cs.filter(c=>c.id!==edit.block.id));setEdit(null);};
+  return (
+   <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
+    <header className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-indigo-600"/><h3 className="text-sm font-semibold text-gray-800">시간표</h3></div>
+      <span className="text-[11px] font-semibold text-gray-400">빈 칸 클릭해 추가 · 블록 클릭해 수정</span>
+    </header>
+    <div className="grid gap-1 mb-1" style={{gridTemplateColumns:"28px repeat(5,1fr)"}}>
+      <div/>{DAYS.map(d=><div key={d} className="text-[11px] font-semibold text-gray-500 text-center">{d}</div>)}
+    </div>
+    <div className="grid gap-1" style={{gridTemplateColumns:"28px repeat(5,1fr)"}}>
+      <div className="flex flex-col">{Array.from({length:rows}).map((_,i)=><div key={i} className="h-9 text-[9px] text-gray-300 text-right pr-1 leading-9">{H0+i}</div>)}</div>
+      {DAYS.map((_,d)=>(
+        <div key={d} className="relative">
+          {Array.from({length:rows}).map((_,i)=><button key={i} onClick={()=>setEdit({isNew:true,block:{id:"",subject:"",room:"",day:d,start:H0+i,end:H0+i+1,color:"indigo"}})} className="block w-full h-9 border-t border-gray-100 hover:bg-indigo-50/40"/>)}
+          {cs.filter(c=>c.day===d).map(c=>{const t=TONE[c.color];return(
+            <button key={c.id} onClick={()=>setEdit({isNew:false,block:{...c}})} className={"absolute left-0 right-0 rounded-lg px-1.5 py-1 text-left overflow-hidden ring-1 "+t[0]+" "+t[2]} style={{top:(c.start-H0)*36,height:(c.end-c.start)*36-2}}>
+              <p className={"text-[10px] font-semibold leading-tight "+t[1]}>{c.subject}</p>{c.room&&<p className="text-[9px] text-gray-400 truncate">{c.room}</p>}
+            </button>);})}
+        </div>
+      ))}
+    </div>
+    {edit&&<Modal edit={edit} setEdit={setEdit} save={save} del={del}/>}
+   </section>
+  );
+}
+function Modal({edit,setEdit,save,del}){
+  const b=edit.block, set=(p)=>setEdit({...edit,block:{...b,...p}});
+  return (
+   <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={()=>setEdit(null)}>
+    <div className="bg-white rounded-xl p-5 w-72 shadow-xl" onClick={e=>e.stopPropagation()}>
+      <h4 className="text-sm font-bold text-gray-800 mb-3">{edit.isNew?"강의 추가":"강의 수정"}</h4>
+      <div className="space-y-2.5">
+        <input autoFocus className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px]" placeholder="과목명" value={b.subject} onChange={e=>set({subject:e.target.value})}/>
+        <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px]" placeholder="강의실 (선택)" value={b.room} onChange={e=>set({room:e.target.value})}/>
+        <div className="flex gap-2">
+          <select className="flex-1 border border-gray-200 rounded-lg px-2 py-2 text-[13px]" value={b.day} onChange={e=>set({day:+e.target.value})}>{DAYS.map((d,i)=><option key={d} value={i}>{d}요일</option>)}</select>
+          <select className="flex-1 border border-gray-200 rounded-lg px-2 py-2 text-[13px]" value={b.start} onChange={e=>{const s=+e.target.value;set({start:s,end:Math.max(b.end,s+1)});}}>{Array.from({length:H1-H0}).map((_,i)=><option key={i} value={H0+i}>{H0+i}시</option>)}</select>
+          <select className="flex-1 border border-gray-200 rounded-lg px-2 py-2 text-[13px]" value={b.end} onChange={e=>set({end:+e.target.value})}>{Array.from({length:H1-H0}).map((_,i)=>H0+1+i).filter(h=>h>b.start).map(h=><option key={h} value={h}>{h}시</option>)}</select>
+        </div>
+        <div className="flex gap-2 pt-1">{Object.keys(TONE).map(c=><button key={c} onClick={()=>set({color:c})} className={"w-7 h-7 rounded-full "+TONE[c][0]+" "+TONE[c][1]+(b.color===c?" ring-2 ring-offset-1 ring-gray-400":"")}>●</button>)}</div>
+      </div>
+      <div className="flex justify-between mt-4">{!edit.isNew?<button onClick={del} className="text-[13px] text-red-500 font-medium">삭제</button>:<span/>}
+        <div className="flex gap-2"><button onClick={()=>setEdit(null)} className="text-[13px] text-gray-500 px-3 py-1.5">취소</button><button onClick={save} className="text-[13px] bg-indigo-600 text-white rounded-lg px-4 py-1.5 font-medium">저장</button></div></div>
+    </div>
+   </div>
+  );
+}
+
+/* ===== 투표 ===== */
+const SEED_POLL={id:"festival-2026",title:"축제 초청 가수 투표",owner:"학생회",total:32,deadline:"2026-06-29",
+  options:[{id:"o1",label:"데이식스",votes:9},{id:"o2",label:"아이브",votes:5},{id:"o3",label:"잔나비",votes:3}]};
+const tv=(p)=>p.options.reduce((s,o)=>s+o.votes,0);
+const pct=(p,id)=>{const t=tv(p);if(!t)return 0;const v=p.options.find(o=>o.id===id)?.votes??0;return Math.round(v/t*100);};
+const closed=(p)=>new Date(p.deadline)<new Date(new Date().toDateString());
+const dday=(p)=>Math.ceil((new Date(p.deadline)-new Date(new Date().toDateString()))/86400000);
+
+function Poll(){
+  const [poll,setPoll]=useState(()=>LS.get('poll.'+SEED_POLL.id,SEED_POLL));
+  const [sel,setSel]=useState(null);
+  const voted=!!poll.votedOptionId, isC=closed(poll), result=voted||isC;
+  const submit=()=>{if(!sel||voted||isC)return;const n={...poll,votedOptionId:sel,options:poll.options.map(o=>o.id===sel?{...o,votes:o.votes+1}:o)};setPoll(n);LS.set('poll.'+n.id,n);};
+  return (
+   <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
+    <header className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-amber-500"/><h3 className="text-sm font-semibold text-gray-800">{poll.title}</h3></div>
+      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 rounded-full px-2.5 py-1">{poll.owner}</span>
+    </header>
+    <div className="space-y-2">
+      {poll.options.map(o=>{const p=pct(poll,o.id),mine=poll.votedOptionId===o.id;
+        return result?(
+          <div key={o.id}>
+            <div className="flex justify-between text-[11px] mb-1"><span className={mine?"font-bold text-amber-600":"text-gray-900"}>{o.label}{mine&&" ✓"}</span><span className="font-bold text-gray-500">{p}%</span></div>
+            <div className="h-2 rounded-full bg-gray-100 overflow-hidden"><div className={mine?"h-full bg-amber-500":"h-full bg-amber-300"} style={{width:p+"%"}}/></div>
+          </div>
+        ):(
+          <button key={o.id} onClick={()=>setSel(o.id)} className={"w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left "+(sel===o.id?"border-amber-400 bg-amber-50":"border-gray-200 hover:bg-gray-50")}>
+            <span className={"w-4 h-4 rounded-full border-2 grid place-items-center "+(sel===o.id?"border-amber-500":"border-gray-300")}>{sel===o.id&&<span className="w-2 h-2 rounded-full bg-amber-500"/>}</span>
+            <span className="text-[13px] text-gray-900">{o.label}</span>
+          </button>
+        );})}
+    </div>
+    <footer className="mt-3 flex items-center justify-between">
+      <p className="text-[11px] text-gray-400">{poll.total}명 중 {tv(poll)}명 참여 · {isC?"마감됨":"마감 D-"+dday(poll)}</p>
+      {!result&&<button onClick={submit} disabled={!sel} className="text-[12px] bg-amber-500 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-lg px-4 py-1.5 font-medium">투표하기</button>}
+      {voted&&<span className="text-[11px] font-semibold text-amber-600">투표 완료 ✓</span>}
+    </footer>
+   </section>
+  );
+}
+
+function App(){
+  const reset=()=>{localStorage.removeItem('campus.timetable');localStorage.removeItem('campus.poll.festival-2026');location.reload();};
+  return (
+   <div className="p-8 max-w-5xl mx-auto">
+    <div className="flex items-center justify-between mb-6">
+      <div><h1 className="text-2xl font-bold text-gray-900">캠퍼스 보드 — 시간표·투표 데모</h1><p className="text-[13px] text-gray-500 mt-1">변경사항은 브라우저에 저장됩니다(localStorage)</p></div>
+      <button onClick={reset} className="text-[12px] text-gray-500 border border-gray-300 rounded-lg px-3 py-1.5">초기화</button>
+    </div>
+    <div className="grid md:grid-cols-3 gap-5">
+      <div className="md:col-span-2"><Timetable/></div>
+      <Poll/>
+    </div>
+   </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
