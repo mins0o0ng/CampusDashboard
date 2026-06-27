@@ -1,0 +1,47 @@
+name: Scrape KNU data
+
+# 경북대 공지·학식을 주기적으로 수집해 docs/data/*.json 으로 커밋.
+# 정적 사이트(GitHub Pages)가 이 JSON 을 fetch 해 실데이터를 보여줌 — 별도 서버 불필요.
+
+on:
+  schedule:
+    - cron: "0 21 * * *"   # 매일 06:00 KST (21:00 UTC)
+  workflow_dispatch:        # 수동 실행 버튼
+  push:
+    branches: [main]
+    paths: ["scrapers/**", ".github/workflows/scrape.yml"]
+
+permissions:
+  contents: write           # 수집 결과를 리포에 커밋하기 위함
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install -r scrapers/requirements.txt
+
+      - name: Scrape notices & meal
+        run: |
+          mkdir -p docs/data
+          python scrapers/knu_notice_scraper.py --board 1 --pages 1 --out docs/data/notices.json
+          python scrapers/knu_notice_scraper.py --academic academic --pages 1 --out docs/data/notices_academic.json || true
+          python scrapers/knu_meal_scraper.py --out docs/data/meal.json || true
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data
+          if git diff --staged --quiet; then
+            echo "변경 없음 — 커밋 생략"
+          else
+            git commit -m "chore(data): refresh KNU notices & meal [skip ci]"
+            git push
+          fi

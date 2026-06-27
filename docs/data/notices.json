@@ -1,0 +1,117 @@
+{
+  "board": "공지사항",
+  "board_code": 1,
+  "scraped_at": "2026-06-27T12:18:49",
+  "keywords": [],
+  "count": 9,
+  "notices": [
+    {
+      "no": "공지",
+      "title": "무선 방화벽 업그레이드 및 무선랜 서비스 최적화 작업 안내",
+      "author": "정보화본부",
+      "date": "2026/06/26",
+      "views": 70,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=&btin.bbs_cde=&btin.doc_no=1337751&btin.appl_no=000000&btin.page=/&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
+      "has_file": true,
+      "is_new": false,
+      "pinned": true,
+      "matched": []
+    },
+    {
+      "no": "공지",
+      "title": "[긴급] 경북대학교 직원 사칭 물품 구매 및 견적 사기 주의 안내",
+      "author": "시설과",
+      "date": "2026/06/09",
+      "views": 1618,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=&btin.bbs_cde=&btin.doc_no=1337591&btin.appl_no=000000&btin.page=/&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
+      "has_file": false,
+      "is_new": false,
+      "pinned": true,
+      "matched": []
+    },
+    {
+      "no": "244",
+      "title": "지역전략산업혁신연구소(지역협업기술센터) 2026년도 글로컬대학 용역사업 2차 공고 및 사전 제안서 접수",
+      "author": "지역전략산업혁신연구소",
+      "date": "2026/06/26",
+      "views": 49,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=&btin.bbs_cde=&btin.doc_no=1337747&btin.appl_no=000000&btin.page=/&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
+      "has_file": true,
+      "is_new": false,
+      "pinned": false,
+      "matched": []
+    },
+    {
+      "no": "243",
+      "title": "(재)3.1문화재단 장학생 모집 안내",
+      "author": "학생과",
+      "date": "2026/06/26",
+      "views": 163,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=&btin.bbs_cde=&btin.doc_no=1337746&btin.appl_no=000000&btin.page=/&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
+      "has_file": true,
+      "is_new": false,
+      "pinned": false,
+      "matched": []
+    },
+    {
+      "no": "242",
+      "title": "2026년도 2분기 제2차 경북대학교 산업안전보건위원회 회의 결과",
+      "author": "안전관리총괄본부",
+      "date": "2026/06/26",
+      "views": 55,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=&btin.bbs_cde=&btin.doc_no=1337742&btin.appl_no=000000&btin.page=/&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
+      "has_file": true,
+      "is_new": false,
+      "pinned": false,
+      "matched": []
+    },
+    {
+      "no": "241",
+      "title": "[IT교육센터]2026년 대학원생 맞춤형 IT역량강화 비교과 프로그램 개설 안내[1만원/교재제공]",
+      "author": "IT교육센터",
+      "date": "2026/06/26",
+      "views": 113,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=&btin.bbs_cde=&btin.doc_no=1337739&btin.appl_no=000000&btin.page=/&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
+      "has_file": true,
+      "is_new": false,
+      "pinned": false,
+      "matched": []
+    },
+    {
+      "no": "240",
+      "title": "[IT교육센터]2026년 여름방학 AI.SW혁신인재양성 개설 안내[50~90%할인/ 교재 제공]",
+      "author": "IT교육센터",
+      "date": "2026/06/26",
+      "views": 122,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=&btin.bbs_cde=&btin.doc_no=1337738&btin.appl_no=000000&btin.page=/&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
+      "has_file": true,
+      "is_new": false,
+      "pinned": false,
+      "matched": []
+    },
+    {
+      "no": "239",
+      "title": "연구진흥과 소관 규정 일부 개정(안) 공고",
+      "author": "산학협력단",
+      "date": "2026/06/24",
+      "views": 128,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=&btin.bbs_cde=&btin.doc_no=1337726&btin.appl_no=000000&btin.page=/&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
+      "has_file": true,
+      "is_new": false,
+      "pinned": false,
+      "matched": []
+    },
+    {
+      "no": "238",
+      "title": "대구RISE사업단 소관 규정 및 지침 일부 개정(안) 공고",
+      "author": "대구RISE사업단",
+      "date": "2026/06/23",
+      "views": 150,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=&btin.bbs_cde=&btin.doc_no=1337722&btin.appl_no=000000&btin.page=/&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
+      "has_file": true,
+      "is_new": false,
+      "pinned": false,
+      "matched": []
+    }
+  ]
+}
