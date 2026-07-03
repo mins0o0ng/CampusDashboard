@@ -34,6 +34,7 @@ jobs:
           python-version: "3.11"
 
       - name: Scrape latest KNU data (fallback to committed data on failure)
+        continue-on-error: true
         run: |
           pip install -r scrapers/requirements.txt
           python scrapers/knu_notice_scraper.py --board 1 --pages 1 --out public/data/notices.json || true
