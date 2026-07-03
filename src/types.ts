@@ -8,10 +8,11 @@ export type DayIndex = 0 | 1 | 2 | 3 | 4;
 export type WidgetColor = "indigo" | "red" | "green" | "amber";
 
 // 소속(과·동아리·수업그룹). 사이드바와 시간표가 공유.
+// color 는 hex 문자열(예: "#4F46E5") — 팔레트에서 자유 선택.
 export interface Org {
   id: string;
   name: string;
-  color: WidgetColor;
+  color: string;
 }
 
 // 시간표의 강의 1개

@@ -11,26 +11,20 @@ import OrgModal from "./components/OrgModal";
 import { auth, type Session } from "./lib/auth";
 import { orgStore } from "./lib/orgs";
 import { dashboardStore, GRID_COLS, GRID_ROW_HEIGHT, type DashboardState } from "./lib/dashboard";
-import type { CustomWidgetSpec, Org, WidgetColor, WidgetInstance } from "./types";
+import type { CustomWidgetSpec, Org, WidgetInstance } from "./types";
 
 const Grid = WidthProvider(ReactGridLayout);
-
-const ORG_DOT: Record<WidgetColor, string> = {
-  indigo: "bg-indigo-600",
-  red: "bg-red-500",
-  green: "bg-green-600",
-  amber: "bg-amber-500",
-};
 
 interface SidebarProps {
   name: string;
   orgs: Org[];
   onAddOrg: () => void;
   onEditOrg: (org: Org) => void;
+  onDeleteOrg: (org: Org) => void;
   onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = React.memo(({ name, orgs, onAddOrg, onEditOrg, onLogout }) => (
+const Sidebar: React.FC<SidebarProps> = React.memo(({ name, orgs, onAddOrg, onEditOrg, onDeleteOrg, onLogout }) => (
   <aside className="w-56 bg-white border-r border-gray-200 flex flex-col shrink-0">
     <div className="flex items-center gap-2.5 px-6 py-6">
       <div className="w-6 h-6 rounded-lg bg-indigo-600" />
@@ -46,15 +40,21 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ name, orgs, onAddOrg, onEd
         >+</button>
       </div>
       {orgs.map((org) => (
-        <button
-          key={org.id}
-          onClick={() => onEditOrg(org)}
-          className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 mb-0.5 hover:bg-gray-50 group"
-        >
-          <span className={`w-2 h-2 rounded-full ${ORG_DOT[org.color]}`} />
-          <span className="text-[13px] flex-1 text-left font-medium text-gray-600 truncate">{org.name}</span>
-          <span className="text-[10px] text-gray-300 opacity-0 group-hover:opacity-100">편집</span>
-        </button>
+        <div key={org.id} className="flex items-center rounded-lg mb-0.5 hover:bg-gray-50 group">
+          <button
+            onClick={() => onEditOrg(org)}
+            className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2.5 text-left"
+          >
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: org.color }} />
+            <span className="text-[13px] flex-1 font-medium text-gray-600 truncate">{org.name}</span>
+            <span className="text-[10px] text-gray-300 opacity-0 group-hover:opacity-100">편집</span>
+          </button>
+          <button
+            onClick={() => onDeleteOrg(org)}
+            aria-label={`${org.name} 삭제`}
+            className="shrink-0 w-5 h-5 mr-2 rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 text-[12px] leading-none opacity-0 group-hover:opacity-100 grid place-items-center"
+          >✕</button>
+        </div>
       ))}
     </nav>
     <div className="flex items-center gap-2.5 px-5 py-5 border-t border-gray-100">
@@ -82,7 +82,7 @@ const App: React.FC = () => {
 
   /* ---------- 소속 관리 ---------- */
   const saveOrg = useCallback(
-    (name: string, color: WidgetColor) => {
+    (name: string, color: string) => {
       setOrgs((prev) =>
         orgModal.org
           ? orgStore.update(prev, { ...orgModal.org, name, color })
@@ -95,6 +95,12 @@ const App: React.FC = () => {
   const deleteOrg = useCallback(() => {
     if (orgModal.org) setOrgs((prev) => orgStore.remove(prev, orgModal.org!.id));
   }, [orgModal.org]);
+
+  const deleteOrgDirect = useCallback((org: Org) => {
+    if (window.confirm(`'${org.name}' 소속을 삭제할까요?`)) {
+      setOrgs((prev) => orgStore.remove(prev, org.id));
+    }
+  }, []);
 
   /* ---------- 대시보드 레이아웃 ---------- */
   const onLayoutChange = useCallback((layout: Layout) => {
@@ -171,6 +177,7 @@ const App: React.FC = () => {
         orgs={orgs}
         onAddOrg={() => setOrgModal({ open: true, org: null })}
         onEditOrg={(org) => setOrgModal({ open: true, org })}
+        onDeleteOrg={deleteOrgDirect}
         onLogout={logout}
       />
       <main className="flex-1 p-8 overflow-auto">

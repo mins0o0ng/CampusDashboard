@@ -7,17 +7,26 @@ import type { Org } from "../types";
 const KEY = "campus.orgs";
 
 const SEED_ORGS: Org[] = [
-  { id: "org-personal", name: "개인", color: "amber" },
-  { id: "org-cs", name: "컴퓨터공학과", color: "indigo" },
-  { id: "org-club", name: "블로우파이프 동아리", color: "red" },
-  { id: "org-capstone", name: "캡스톤 디자인 4조", color: "green" },
+  { id: "org-personal", name: "개인", color: "#64748B" },
+  { id: "org-cs", name: "컴퓨터공학과", color: "#4F46E5" },
+  { id: "org-club", name: "블로우파이프 동아리", color: "#EF4444" },
+  { id: "org-capstone", name: "캡스톤 디자인 4조", color: "#16A34A" },
 ];
+
+// 구버전(팔레트 4색 이름) 저장분 → hex 로 변환
+const LEGACY_COLORS: Record<string, string> = {
+  indigo: "#4F46E5",
+  red: "#EF4444",
+  green: "#16A34A",
+  amber: "#F59E0B",
+};
 
 function read(): Org[] {
   try {
     const raw = localStorage.getItem(KEY);
     const parsed = raw ? (JSON.parse(raw) as Org[]) : null;
-    return parsed && parsed.length > 0 ? parsed : SEED_ORGS;
+    if (!parsed || parsed.length === 0) return SEED_ORGS;
+    return parsed.map((o) => ({ ...o, color: LEGACY_COLORS[o.color] ?? o.color }));
   } catch {
     return SEED_ORGS;
   }

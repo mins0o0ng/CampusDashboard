@@ -37,8 +37,8 @@ interface Props {
 
 export const TimetableWidget: React.FC<Props> = ({ orgs }) => {
   const [classes, setClasses] = useState<ClassBlock[]>(() => timetableStore.load());
-  const orgName = useCallback(
-    (id?: string) => (id ? orgs.find((o) => o.id === id)?.name : undefined),
+  const findOrg = useCallback(
+    (id?: string) => (id ? orgs.find((o) => o.id === id) : undefined),
     [orgs]
   );
   const [edit, setEdit] = useState<EditState | null>(null);
@@ -123,9 +123,17 @@ export const TimetableWidget: React.FC<Props> = ({ orgs }) => {
                     style={{ top, height }}
                   >
                     <p className={`text-[10px] font-semibold leading-tight ${col.text}`}>{c.subject}</p>
-                    {orgName(c.orgId) && (
-                      <p className={`text-[8px] font-medium truncate opacity-80 ${col.text}`}>{orgName(c.orgId)}</p>
-                    )}
+                    {(() => {
+                      const org = findOrg(c.orgId);
+                      return org ? (
+                        <span
+                          className="inline-block max-w-full truncate text-[8px] font-semibold text-white rounded-full px-1.5 py-px mt-0.5 leading-tight"
+                          style={{ backgroundColor: org.color }}
+                        >
+                          {org.name}
+                        </span>
+                      ) : null;
+                    })()}
                     {c.room && <p className="text-[9px] text-gray-400 truncate">{c.room}</p>}
                   </button>
                 );
