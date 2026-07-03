@@ -33,6 +33,9 @@ jobs:
           mkdir -p public/data
           python scrapers/knu_notice_scraper.py --board 1 --pages 1 --out public/data/notices.json
           python scrapers/knu_notice_scraper.py --academic academic --pages 1 --out public/data/notices_academic.json || true
+          for shop in 35 36 46; do
+            python scrapers/knu_meal_scraper.py --shop "$shop" --out "public/data/meal_${shop}.json" || true
+          done
           python scrapers/knu_meal_scraper.py --out public/data/meal.json || true
 
       - name: Commit if changed

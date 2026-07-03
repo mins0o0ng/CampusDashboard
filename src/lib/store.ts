@@ -22,11 +22,11 @@ function write<T>(key: string, value: T): void {
 /* ============================ 시간표 스토어 ============================ */
 
 const SEED_TIMETABLE: ClassBlock[] = [
-  { id: "c1", subject: "알고리즘", room: "IT4-301", day: 0, start: 9, end: 11, color: "indigo" },
-  { id: "c2", subject: "운영체제", room: "공대 211", day: 2, start: 9, end: 10, color: "red" },
-  { id: "c3", subject: "소프트웨어공학", room: "IT1-103", day: 1, start: 11, end: 12, color: "amber" },
-  { id: "c4", subject: "DB설계", room: "IT2-205", day: 3, start: 11, end: 13, color: "green" },
-  { id: "c5", subject: "캡스톤디자인", room: "IT4-401", day: 4, start: 9, end: 10, color: "indigo" },
+  { id: "c1", subject: "알고리즘", room: "IT4-301", day: 0, start: 9, end: 11, color: "indigo", orgId: "org-cs" },
+  { id: "c2", subject: "운영체제", room: "공대 211", day: 2, start: 9, end: 10, color: "red", orgId: "org-cs" },
+  { id: "c3", subject: "소프트웨어공학", room: "IT1-103", day: 1, start: 11, end: 12, color: "amber", orgId: "org-cs" },
+  { id: "c4", subject: "DB설계", room: "IT2-205", day: 3, start: 11, end: 13, color: "green", orgId: "org-cs" },
+  { id: "c5", subject: "캡스톤디자인", room: "IT4-401", day: 4, start: 9, end: 10, color: "indigo", orgId: "org-capstone" },
 ];
 
 export const timetableStore = {
@@ -55,37 +55,78 @@ export const timetableStore = {
 
 /* ============================ 투표 스토어 ============================ */
 
-const SEED_POLL: Poll = {
-  id: "festival-2026",
-  title: "축제 초청 가수 투표",
-  owner: "학생회",
-  total: 32,
-  deadline: "2026-08-31",
-  options: [
-    { id: "o1", label: "데이식스", votes: 9 },
-    { id: "o2", label: "아이브", votes: 5 },
-    { id: "o3", label: "잔나비", votes: 3 },
-  ],
-};
+const SEED_POLLS: Poll[] = [
+  {
+    id: "festival-2026",
+    title: "축제 초청 가수 투표",
+    owner: "학생회",
+    total: 32,
+    deadline: "2026-08-31",
+    options: [
+      { id: "o1", label: "데이식스", votes: 9 },
+      { id: "o2", label: "아이브", votes: 5 },
+      { id: "o3", label: "잔나비", votes: 3 },
+    ],
+  },
+  {
+    id: "mt-2026-2",
+    title: "2학기 MT 날짜 선호 조사",
+    owner: "컴퓨터공학과",
+    total: 32,
+    deadline: "2026-07-20",
+    options: [
+      { id: "o1", label: "9/4(금)~9/5(토)", votes: 7 },
+      { id: "o2", label: "9/11(금)~9/12(토)", votes: 4 },
+      { id: "o3", label: "9/18(금)~9/19(토)", votes: 2 },
+    ],
+  },
+  {
+    id: "club-dinner-2026",
+    title: "동아리 회식 메뉴",
+    owner: "블로우파이프 동아리",
+    total: 14,
+    deadline: "2026-07-05",
+    options: [
+      { id: "o1", label: "삼겹살", votes: 5 },
+      { id: "o2", label: "치킨+맥주", votes: 4 },
+      { id: "o3", label: "마라탕", votes: 1 },
+    ],
+  },
+];
+
+// 구버전(단일 투표) 저장분을 목록 형태로 흡수한다.
+function migratePolls(): Poll[] {
+  const legacy = read<Poll | null>("poll.festival-2026", null);
+  const merged = SEED_POLLS.map((p) => (legacy && p.id === legacy.id ? legacy : p));
+  try {
+    localStorage.removeItem(NS + "poll.festival-2026");
+  } catch {
+    /* 무시 */
+  }
+  return merged;
+}
 
 export const pollStore = {
-  load(): Poll {
-    return read<Poll>("poll." + SEED_POLL.id, SEED_POLL);
+  loadAll(): Poll[] {
+    const stored = read<Poll[] | null>("polls", null);
+    if (stored && stored.length > 0) return stored;
+    return migratePolls();
   },
-  save(poll: Poll): void {
-    write("poll." + poll.id, poll);
+  saveAll(polls: Poll[]): void {
+    write("polls", polls);
   },
-  vote(poll: Poll, optionId: string): Poll {
-    if (poll.votedOptionId) return poll;
-    if (isClosed(poll)) return poll;
-    const next: Poll = {
-      ...poll,
-      votedOptionId: optionId,
-      options: poll.options.map((o) =>
-        o.id === optionId ? { ...o, votes: o.votes + 1 } : o
-      ),
-    };
-    this.save(next);
+  vote(polls: Poll[], pollId: string, optionId: string): Poll[] {
+    const next = polls.map((p) => {
+      if (p.id !== pollId || p.votedOptionId || isClosed(p)) return p;
+      return {
+        ...p,
+        votedOptionId: optionId,
+        options: p.options.map((o) =>
+          o.id === optionId ? { ...o, votes: o.votes + 1 } : o
+        ),
+      };
+    });
+    this.saveAll(next);
     return next;
   },
 };

@@ -17,7 +17,7 @@ export const NoticeWidget: React.FC = () => {
   }, []);
 
   return (
-    <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
+    <section className="h-full rounded-2xl bg-white border border-gray-200 shadow-sm p-5 overflow-auto">
       <header className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-red-500" />

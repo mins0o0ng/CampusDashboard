@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { staticData, type MealPayload } from "../lib/staticData";
+import { staticData, RESTAURANTS, type MealPayload } from "../lib/staticData";
 
 const MAX_ITEMS = 5;
 
@@ -8,20 +8,24 @@ function won(price: number | null): string {
 }
 
 export const MealWidget: React.FC = () => {
-  const [data, setData] = useState<MealPayload | null | undefined>(undefined);
+  const [shop, setShop] = useState<number>(RESTAURANTS[0].code);
+  const [cache, setCache] = useState<Record<number, MealPayload | null>>({});
+
+  const data = shop in cache ? cache[shop] : undefined;
 
   useEffect(() => {
+    if (shop in cache) return;
     let alive = true;
-    staticData.meal().then((d) => {
-      if (alive) setData(d);
+    staticData.meal(shop).then((d) => {
+      if (alive) setCache((prev) => ({ ...prev, [shop]: d }));
     });
     return () => {
       alive = false;
     };
-  }, []);
+  }, [shop, cache]);
 
   return (
-    <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
+    <section className="h-full rounded-2xl bg-white border border-gray-200 shadow-sm p-5 overflow-auto">
       <header className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-green-600" />
@@ -32,9 +36,25 @@ export const MealWidget: React.FC = () => {
         )}
       </header>
 
+      <div className="flex gap-1.5 mb-3 flex-wrap">
+        {RESTAURANTS.map((r) => (
+          <button
+            key={r.code}
+            onClick={() => setShop(r.code)}
+            className={`text-[11px] rounded-full px-2.5 py-1 border font-medium ${
+              shop === r.code
+                ? "bg-green-600 border-green-600 text-white"
+                : "border-gray-200 text-gray-500 hover:bg-gray-50"
+            }`}
+          >
+            {r.name}
+          </button>
+        ))}
+      </div>
+
       {data === undefined && <p className="text-[12px] text-gray-400 py-6 text-center">불러오는 중…</p>}
       {(data === null || (data && data.meals.length === 0)) && (
-        <p className="text-[12px] text-gray-400 py-6 text-center">오늘은 식단 정보가 없습니다.</p>
+        <p className="text-[12px] text-gray-400 py-6 text-center">이 식당의 식단 정보가 없습니다.</p>
       )}
 
       {data && data.meals.length > 0 && (

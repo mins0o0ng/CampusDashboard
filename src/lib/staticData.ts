@@ -49,7 +49,19 @@ async function fetchJson<T>(path: string): Promise<T | null> {
   }
 }
 
+// 교내 식당 목록(경북대 생협 shop_sqno). 스크래퍼가 식당별 meal_<code>.json 을 생성한다.
+export const RESTAURANTS = [
+  { code: 35, name: "학생식당" },
+  { code: 36, name: "복지관 교직원식당" },
+  { code: 46, name: "GP감꽃식당" },
+] as const;
+
 export const staticData = {
   notices: () => fetchJson<NoticesPayload>("data/notices.json"),
-  meal: () => fetchJson<MealPayload>("data/meal.json"),
+  // 식당별 파일 우선, 없으면 구버전 meal.json(학생식당) 폴백
+  meal: async (shopCode: number): Promise<MealPayload | null> => {
+    const perShop = await fetchJson<MealPayload>(`data/meal_${shopCode}.json`);
+    if (perShop) return perShop;
+    return shopCode === 35 ? fetchJson<MealPayload>("data/meal.json") : null;
+  },
 };

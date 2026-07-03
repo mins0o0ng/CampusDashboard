@@ -38,6 +38,9 @@ jobs:
         run: |
           pip install -r scrapers/requirements.txt
           python scrapers/knu_notice_scraper.py --board 1 --pages 1 --out public/data/notices.json || true
+          for shop in 35 36 46; do
+            python scrapers/knu_meal_scraper.py --shop "$shop" --out "public/data/meal_${shop}.json" || true
+          done
           python scrapers/knu_meal_scraper.py --out public/data/meal.json || true
 
       - uses: actions/setup-node@v4

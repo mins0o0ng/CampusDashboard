@@ -2,35 +2,57 @@ import React, { useState, useCallback, useMemo } from "react";
 import type { Poll } from "../types";
 import { pollStore, percent, totalVotes, dday, isClosed } from "../lib/store";
 
-export const PollWidget: React.FC = () => {
-  const [poll, setPoll] = useState<Poll>(() => pollStore.load());
-  const [selected, setSelected] = useState<string | null>(null);
-
-  const voted = Boolean(poll.votedOptionId);
-  const closed = isClosed(poll);
-  const showResult = voted || closed;
+function deadlineLabel(poll: Poll): string {
+  if (isClosed(poll)) return "마감됨";
   const remain = dday(poll);
-  const total = useMemo(() => totalVotes(poll), [poll]);
+  return remain === 0 ? "D-Day" : `마감 D-${remain}`;
+}
+
+export const PollWidget: React.FC = () => {
+  const [polls, setPolls] = useState<Poll[]>(() => pollStore.loadAll());
+  const [activeId, setActiveId] = useState<string>(() => pollStore.loadAll()[0]?.id ?? "");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [showList, setShowList] = useState(false);
+
+  const poll = useMemo(
+    () => polls.find((p) => p.id === activeId) ?? polls[0],
+    [polls, activeId]
+  );
+
+  const voted = Boolean(poll?.votedOptionId);
+  const closed = poll ? isClosed(poll) : false;
+  const showResult = voted || closed;
+  const total = useMemo(() => (poll ? totalVotes(poll) : 0), [poll]);
 
   const submit = useCallback(() => {
-    if (!selected) return;
-    setPoll(pollStore.vote(poll, selected));
-  }, [poll, selected]);
+    if (!poll || !selected) return;
+    setPolls(pollStore.vote(polls, poll.id, selected));
+    setSelected(null);
+  }, [polls, poll, selected]);
 
-  const deadlineLabel = useMemo(() => {
-    if (closed) return "마감됨";
-    if (remain === 0) return "D-Day";
-    return `마감 D-${remain}`;
-  }, [closed, remain]);
+  const pickPoll = useCallback((id: string) => {
+    setActiveId(id);
+    setSelected(null);
+    setShowList(false);
+  }, []);
+
+  if (!poll) return null;
 
   return (
-    <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
-      <header className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-amber-500" />
-          <h3 className="text-sm font-semibold text-gray-800">{poll.title}</h3>
+    <section className="h-full rounded-2xl bg-white border border-gray-200 shadow-sm p-5 overflow-auto">
+      <header className="flex items-center justify-between mb-3 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+          <h3 className="text-sm font-semibold text-gray-800 truncate">{poll.title}</h3>
         </div>
-        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 rounded-full px-2.5 py-1">{poll.owner}</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] font-bold text-amber-600 bg-amber-50 rounded-full px-2.5 py-1">{poll.owner}</span>
+          <button
+            onClick={() => setShowList(true)}
+            aria-label="모든 투표 보기"
+            className="w-6 h-6 rounded-full border border-gray-200 text-gray-400 hover:text-amber-600 hover:border-amber-300 text-sm leading-none grid place-items-center"
+          >+</button>
+        </div>
       </header>
 
       <div className="space-y-2">
@@ -71,7 +93,7 @@ export const PollWidget: React.FC = () => {
 
       <footer className="mt-3 flex items-center justify-between">
         <p className="text-[11px] text-gray-400">
-          {poll.total}명 중 {total}명 참여 · {deadlineLabel}
+          {poll.total}명 중 {total}명 참여 · {deadlineLabel(poll)}
         </p>
         {!showResult && (
           <button
@@ -84,6 +106,37 @@ export const PollWidget: React.FC = () => {
         )}
         {voted && <span className="text-[11px] font-semibold text-amber-600">투표 완료 ✓</span>}
       </footer>
+
+      {showList && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowList(false)}>
+          <div className="bg-white rounded-xl p-5 w-96 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h4 className="text-sm font-bold text-gray-800 mb-3">모든 투표</h4>
+            <ul className="space-y-1.5 max-h-80 overflow-auto">
+              {polls.map((p) => (
+                <li key={p.id}>
+                  <button
+                    onClick={() => pickPoll(p.id)}
+                    className={`w-full rounded-lg border px-3 py-2.5 text-left ${
+                      p.id === poll.id ? "border-amber-400 bg-amber-50" : "border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[13px] font-medium text-gray-900 truncate">{p.title}</span>
+                      {p.votedOptionId && <span className="shrink-0 text-[10px] font-semibold text-amber-600">참여함 ✓</span>}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {p.owner} · {totalVotes(p)}명 참여 · {deadlineLabel(p)}
+                    </p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="flex justify-end mt-3">
+              <button onClick={() => setShowList(false)} className="text-[13px] text-gray-500 px-3 py-1.5">닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

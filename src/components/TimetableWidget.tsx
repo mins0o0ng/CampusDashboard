@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from "react";
-import type { ClassBlock, DayIndex, WidgetColor } from "../types";
+import type { ClassBlock, DayIndex, Org, WidgetColor } from "../types";
 import { timetableStore } from "../lib/store";
 
 const DAYS = ["월", "화", "수", "목", "금"];
@@ -31,8 +31,16 @@ const emptyBlock = (day: DayIndex, start: number): ClassBlock => ({
   color: "indigo",
 });
 
-export const TimetableWidget: React.FC = () => {
+interface Props {
+  orgs: Org[];
+}
+
+export const TimetableWidget: React.FC<Props> = ({ orgs }) => {
   const [classes, setClasses] = useState<ClassBlock[]>(() => timetableStore.load());
+  const orgName = useCallback(
+    (id?: string) => (id ? orgs.find((o) => o.id === id)?.name : undefined),
+    [orgs]
+  );
   const [edit, setEdit] = useState<EditState | null>(null);
 
   const openNew = useCallback((day: DayIndex, start: number) =>
@@ -65,7 +73,7 @@ export const TimetableWidget: React.FC = () => {
   }, [edit?.block.start]);
 
   return (
-    <section className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
+    <section className="h-full rounded-2xl bg-white border border-gray-200 shadow-sm p-5 overflow-auto">
       <header className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-indigo-600" />
@@ -115,6 +123,9 @@ export const TimetableWidget: React.FC = () => {
                     style={{ top, height }}
                   >
                     <p className={`text-[10px] font-semibold leading-tight ${col.text}`}>{c.subject}</p>
+                    {orgName(c.orgId) && (
+                      <p className={`text-[8px] font-medium truncate opacity-80 ${col.text}`}>{orgName(c.orgId)}</p>
+                    )}
                     {c.room && <p className="text-[9px] text-gray-400 truncate">{c.room}</p>}
                   </button>
                 );
@@ -164,6 +175,14 @@ export const TimetableWidget: React.FC = () => {
                   {endOptions.map((h) => <option key={h} value={h}>{h}시</option>)}
                 </select>
               </div>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-2 py-2 text-[13px]"
+                value={edit.block.orgId ?? ""}
+                onChange={(e) => setEdit({ ...edit, block: { ...edit.block, orgId: e.target.value || undefined } })}
+              >
+                <option value="">소속 없음 (개인)</option>
+                {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+              </select>
               <div className="flex gap-2 pt-1">
                 {COLOR_KEYS.map((c) => (
                   <button
