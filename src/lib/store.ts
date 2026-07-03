@@ -60,7 +60,7 @@ const SEED_POLL: Poll = {
   title: "축제 초청 가수 투표",
   owner: "학생회",
   total: 32,
-  deadline: "2026-06-29",
+  deadline: "2026-08-31",
   options: [
     { id: "o1", label: "데이식스", votes: 9 },
     { id: "o2", label: "아이브", votes: 5 },

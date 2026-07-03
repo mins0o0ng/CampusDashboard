@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
 import TimetableWidget from "./components/TimetableWidget";
 import PollWidget from "./components/PollWidget";
+import NoticeWidget from "./components/NoticeWidget";
+import MealWidget from "./components/MealWidget";
 
 const ORGS: [string, string, boolean, number | null][] = [
   ["개인", "bg-slate-400", false, null],
@@ -47,7 +49,11 @@ const App: React.FC = () => {
         </div>
         <div className="grid grid-cols-3 gap-5">
           <div className="col-span-2"><TimetableWidget /></div>
-          <PollWidget />
+          <div className="space-y-5">
+            <PollWidget />
+            <MealWidget />
+          </div>
+          <div className="col-span-2"><NoticeWidget /></div>
         </div>
       </main>
     </div>

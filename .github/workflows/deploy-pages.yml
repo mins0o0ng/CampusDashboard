@@ -1,8 +1,14 @@
 name: Deploy to GitHub Pages
 
+# 실제 React 앱(Vite 빌드)을 GitHub Pages 로 배포.
+# 빌드 직전에 스크래퍼를 실행해 최신 공지·학식 JSON 을 함께 배포한다.
+# 스크래퍼 실패 시 리포에 커밋된 public/data 를 그대로 사용(무중단 폴백).
+
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "30 21 * * *" # 매일 06:30 KST — 최신 데이터로 재빌드
   workflow_dispatch:
 
 permissions:
@@ -23,13 +29,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Scrape latest KNU data (fallback to committed data on failure)
+        run: |
+          pip install -r scrapers/requirements.txt
+          python scrapers/knu_notice_scraper.py --board 1 --pages 1 --out public/data/notices.json || true
+          python scrapers/knu_meal_scraper.py --out public/data/meal.json || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Build app
+        run: |
+          npm ci
+          npm run build
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: docs
+          path: dist
 
       - name: Deploy to GitHub Pages
         id: deployment

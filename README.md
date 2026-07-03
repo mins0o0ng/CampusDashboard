@@ -3,28 +3,23 @@
 대학생이 자기 소속(과·동아리·수업그룹) 단위로 쓰는 개인화 위젯 대시보드 프로토타입.
 설계 원칙: **기본은 가볍게, 깊이는 선택으로, 빈칸은 AI로.**
 
-## 🌐 라이브 데모
+## 🌐 라이브 사이트
 **https://mins0o0ng.github.io/CampusDashboard/**
 
-GitHub Pages 로 배포되는 정적 사이트(`docs/index.html`, 빌드 불필요).
-시간표·투표가 실제로 동작하며 변경사항은 브라우저에 저장됩니다.
-**공지·학식은 실데이터** — GitHub Actions 가 매일 스크래퍼를 돌려 `docs/data/*.json`
-을 커밋하고, 정적 사이트가 이를 fetch 해 보여줍니다. **별도 서버가 없습니다.**
+실제 React 앱(`src/`, Vite 빌드)이 GitHub Pages 로 배포됩니다.
+시간표·투표가 실제로 동작하며 변경사항은 브라우저(localStorage)에 저장됩니다.
+**공지·학식은 실데이터** — 배포 워크플로우가 빌드 직전에 스크래퍼를 실행해
+최신 `data/*.json` 을 함께 배포하고, 매일 06:30 KST 에 자동 재배포됩니다.
+**별도 서버가 없습니다.**
 
 ```
-GitHub Actions (cron 매일)
-  → scrapers/*.py 실행 → docs/data/notices.json, meal.json 커밋
-  → GitHub Pages 정적 사이트가 ./data/*.json fetch → 위젯 렌더
+deploy-pages.yml (push to main + cron 매일)
+  → scrapers/*.py 실행 → public/data/notices.json, meal.json 생성
+  → npm run build (Vite) → dist/ 배포
+  → 앱이 ./data/*.json fetch → 공지·학식 위젯 렌더
 ```
-> 최초 자동 수집을 바로 돌리려면 저장소 **Actions 탭 → "Scrape KNU data" → Run workflow**.
-> (Actions 가 커밋하려면 Settings → Actions → General → Workflow permissions =
-> "Read and write permissions" 1회 설정 필요)
-
-### 최초 1회 Pages 켜는 법
-1. push 후 GitHub 저장소 → **Settings → Pages**
-2. **Source: Deploy from a branch** 선택
-3. **Branch: `main` / 폴더: `/docs`** 지정 후 Save
-4. 1~2분 뒤 위 주소에서 사이트 확인 (이후 push 하면 자동 갱신)
+> Pages 는 저장소 **Settings → Pages → Source: GitHub Actions** 로 설정되어 있어야 합니다.
+> `scrape.yml` 은 로컬 개발용 실데이터(`public/data`)를 매일 커밋합니다(배포 폴백 겸용).
 
 ## 이번 버전에 구현된 기능
 

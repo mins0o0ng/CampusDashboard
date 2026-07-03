@@ -1,7 +1,8 @@
 name: Scrape KNU data
 
-# 경북대 공지·학식을 주기적으로 수집해 docs/data/*.json 으로 커밋.
-# 정적 사이트(GitHub Pages)가 이 JSON 을 fetch 해 실데이터를 보여줌 — 별도 서버 불필요.
+# 경북대 공지·학식을 주기적으로 수집해 public/data/*.json 으로 커밋.
+# 로컬 개발(vite dev)의 실데이터 및 배포 빌드의 폴백으로 사용됨.
+# (배포는 deploy-pages.yml 이 빌드 시점에 스크래퍼를 직접 실행해 최신 데이터를 반영)
 
 on:
   schedule:
@@ -29,16 +30,16 @@ jobs:
 
       - name: Scrape notices & meal
         run: |
-          mkdir -p docs/data
-          python scrapers/knu_notice_scraper.py --board 1 --pages 1 --out docs/data/notices.json
-          python scrapers/knu_notice_scraper.py --academic academic --pages 1 --out docs/data/notices_academic.json || true
-          python scrapers/knu_meal_scraper.py --out docs/data/meal.json || true
+          mkdir -p public/data
+          python scrapers/knu_notice_scraper.py --board 1 --pages 1 --out public/data/notices.json
+          python scrapers/knu_notice_scraper.py --academic academic --pages 1 --out public/data/notices_academic.json || true
+          python scrapers/knu_meal_scraper.py --out public/data/meal.json || true
 
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/data
+          git add public/data
           if git diff --staged --quiet; then
             echo "변경 없음 — 커밋 생략"
           else
