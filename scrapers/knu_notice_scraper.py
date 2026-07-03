@@ -25,7 +25,7 @@ import sys
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import Optional
-from urllib.parse import urljoin
+from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -105,6 +105,24 @@ def fetch_list_html(board: int, page: int, academic: Optional[str] = None) -> st
     return resp.text
 
 
+def _fix_view_url(href: str, board: int, menu_idx: int) -> str:
+    """목록 href 의 빈 게시판 코드(bbs_cde)를 채워 세션 없이도 열리는 URL 로 보정.
+
+    목록 페이지의 상세 링크는 bbs_cde/btin.bbs_cde 가 빈 값으로 내려와
+    직접 GET 하면 학교 404 페이지가 뜬다. 게시판 코드와 menu_idx 를 채워 넣는다.
+    """
+    parts = urlparse(href)
+    q = dict(parse_qsl(parts.query, keep_blank_values=True))
+    for key in ("bbs_cde", "btin.bbs_cde"):
+        if not q.get(key):
+            q[key] = str(board)
+    if not q.get("menu_idx"):
+        q["menu_idx"] = str(menu_idx)
+    if not q.get("btin.page", "").isdigit():
+        q["btin.page"] = "1"
+    return urlunparse(parts._replace(query=urlencode(q)))
+
+
 def _academic_url(bbs_cde: str, note_div: str, bltn_no: str, menu_idx: int) -> str:
     """학사공지 상세 링크(JS doRead)를 직접 GET 가능한 절대 URL 로 복원."""
     return (
@@ -113,7 +131,9 @@ def _academic_url(bbs_cde: str, note_div: str, bltn_no: str, menu_idx: int) -> s
     )
 
 
-def parse_notices(html: str, academic_menu_idx: Optional[int] = None) -> list[Notice]:
+def parse_notices(
+    html: str, board: int = 1, academic_menu_idx: Optional[int] = None
+) -> list[Notice]:
     """목록 HTML → Notice 리스트. 테이블 행(tr) 단위로 파싱.
 
     academic_menu_idx 지정 시 학사공지(JS doRead 링크) 파싱 모드.
@@ -137,6 +157,7 @@ def parse_notices(html: str, academic_menu_idx: Optional[int] = None) -> list[No
             if not link:
                 continue
             href = urljoin(BASE, link.get("href", "").replace(">", ""))
+            href = _fix_view_url(href, board, BOARDS.get(board, (67, ""))[0])
 
         cells = tr.find_all("td")
         if len(cells) < 5:
@@ -191,7 +212,7 @@ def scrape(
     seen: set[str] = set()  # 중복(상단 고정+본문 중복) 제거 — bltn_no/url 기준
     for page in range(1, pages + 1):
         html = fetch_list_html(board, page, academic=academic)
-        for n in parse_notices(html, academic_menu_idx=academic_menu_idx):
+        for n in parse_notices(html, board=board, academic_menu_idx=academic_menu_idx):
             # 문서 id(doc_no/bltn_no) 기준 중복 제거 — 상단고정(top)·본문(row) 중복 통합
             id_match = re.search(r"(?:doc_no|bltn_no)=(\d+)", n.url)
             key = id_match.group(1) if id_match else n.url

@@ -7,7 +7,7 @@
 **https://mins0o0ng.github.io/CampusDashboard/**
 
 실제 React 앱(`src/`, Vite 빌드)이 GitHub Pages 로 배포됩니다.
-시간표·투표가 실제로 동작하며 변경사항은 브라우저(localStorage)에 저장됩니다.
+데모 로그인(학번·이름 입력) 후 대시보드 진입. 시간표·투표가 실제로 동작하며 변경사항은 브라우저(localStorage)에 저장됩니다.
 **공지·학식은 실데이터** — 배포 워크플로우가 빌드 직전에 스크래퍼를 실행해
 최신 `data/*.json` 을 함께 배포하고, 매일 06:30 KST 에 자동 재배포됩니다.
 **별도 서버가 없습니다.**
