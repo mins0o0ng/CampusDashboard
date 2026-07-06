@@ -1,7 +1,7 @@
 {
   "board": "공지사항",
   "board_code": 1,
-  "scraped_at": "2026-07-05T21:56:01",
+  "scraped_at": "2026-07-06T22:09:29",
   "keywords": [],
   "count": 10,
   "notices": [
@@ -10,7 +10,7 @@
       "title": "[긴급] 경북대학교 직원 사칭 물품 구매 및 견적 사기 주의 안내",
       "author": "시설과",
       "date": "2026/06/09",
-      "views": 2175,
+      "views": 2206,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337591&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
       "has_file": false,
       "is_new": false,
@@ -18,11 +18,11 @@
       "matched": []
     },
     {
-      "no": "243",
+      "no": "241",
       "title": "편의점 물품 공급 입찰 공고",
       "author": "생활협동조합",
       "date": "2026/07/03",
-      "views": 203,
+      "views": 287,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337804&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -30,11 +30,11 @@
       "matched": []
     },
     {
-      "no": "242",
+      "no": "240",
       "title": "국제처 소관 규정 및 지침 제정(안) 공고",
       "author": "국제교류과",
       "date": "2026/07/02",
-      "views": 121,
+      "views": 140,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337795&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -42,23 +42,11 @@
       "matched": []
     },
     {
-      "no": "241",
-      "title": "2026학년도 2학기 한국농어촌희망재단 청년창업농장학생 신청 안내(연장) ~2026.7.6.(월) 17:00",
-      "author": "학생과",
-      "date": "2026/07/02",
-      "views": 172,
-      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337794&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
-      "has_file": true,
-      "is_new": false,
-      "pinned": false,
-      "matched": []
-    },
-    {
-      "no": "240",
+      "no": "239",
       "title": "[IT교육센터]2026년 대학원생 맞춤형 IT역량강화 비교과 개설 안내[1만원/교재제공]",
       "author": "IT교육센터",
       "date": "2026/07/02",
-      "views": 142,
+      "views": 189,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337792&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -66,11 +54,11 @@
       "matched": []
     },
     {
-      "no": "239",
+      "no": "238",
       "title": "2026년 (재)제주평생교육장학진흥원 미래이음 장학금 장학생 추가 모집 안내",
       "author": "학생과",
       "date": "2026/07/02",
-      "views": 154,
+      "views": 195,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337791&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -78,11 +66,11 @@
       "matched": []
     },
     {
-      "no": "238",
+      "no": "237",
       "title": "[IT교육센터]2026년 AI.SW혁신인재양성 7월 개설 안내[50~90%할인, 교재제공]",
       "author": "IT교육센터",
       "date": "2026/07/02",
-      "views": 123,
+      "views": 145,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337790&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -90,11 +78,11 @@
       "matched": []
     },
     {
-      "no": "237",
+      "no": "236",
       "title": "[진로탐색수업] 2026학년도 2학기 참가자 모집(6/22~7/15) 안내",
       "author": "진로취업과",
       "date": "2026/07/02",
-      "views": 244,
+      "views": 294,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337789&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -102,11 +90,11 @@
       "matched": []
     },
     {
-      "no": "236",
+      "no": "235",
       "title": "[진로취업과] 「KNU-대구앵커」 청년 연구자를 위한 ABB 역량 강화 프로그램(1차) 신청 안내 - 빅데이터 분석 기사 (필기)",
       "author": "진로취업과",
       "date": "2026/07/01",
-      "views": 185,
+      "views": 204,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337785&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -114,12 +102,24 @@
       "matched": []
     },
     {
-      "no": "235",
+      "no": "234",
       "title": "[대학원혁신] 대학원생 직무교육(제약바이오 분야)",
       "author": "진로취업과",
       "date": "2026/07/01",
-      "views": 91,
+      "views": 107,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337784&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
+      "has_file": true,
+      "is_new": false,
+      "pinned": false,
+      "matched": []
+    },
+    {
+      "no": "233",
+      "title": "2026년도 한국장학재단 국가근로장학금(교외) 하계방학 집중프로그램 근로 안내",
+      "author": "학생과",
+      "date": "2026/06/30",
+      "views": 489,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337776&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
       "pinned": false,
