@@ -35,7 +35,8 @@ export const AddWidgetDialog: React.FC<Props> = ({ onAdd, onClose }) => {
       <div className="bg-white rounded-xl p-5 w-[26rem] shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h4 className="text-sm font-bold text-gray-800 mb-1">AI 로 위젯 만들기</h4>
         <p className="text-[11px] text-gray-400 mb-3">
-          필요한 위젯을 설명하면 만들어 드립니다. 메모·체크리스트·D-Day·링크 모음을 지원해요.
+          필요한 위젯을 설명하면 무료 AI 가 만들어 드립니다(키 불필요 · 첫 사용 시 Puter 로그인 창이 뜰 수 있어요).
+          메모·체크리스트·D-Day·링크 모음을 지원해요.
         </p>
 
         <textarea
@@ -48,7 +49,7 @@ export const AddWidgetDialog: React.FC<Props> = ({ onAdd, onClose }) => {
         />
 
         <button onClick={() => setShowKey(!showKey)} className="text-[11px] text-gray-400 hover:text-gray-600 mt-2">
-          {showKey ? "▾" : "▸"} Anthropic API 키 (선택 — 있으면 Claude 가 생성)
+          {showKey ? "▾" : "▸"} 내 Anthropic API 키 사용 (선택 — 무료 AI 대신 Claude 직접 호출)
         </button>
         {showKey && (
           <div className="mt-1.5">
@@ -60,7 +61,7 @@ export const AddWidgetDialog: React.FC<Props> = ({ onAdd, onClose }) => {
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
             />
             <p className="text-[10px] text-gray-400 mt-1">
-              키는 이 브라우저에만 저장됩니다. 키가 없으면 간단한 규칙 기반으로 생성돼요.
+              키는 이 브라우저에만 저장됩니다. 비워 두면 무료 AI(Puter)를 사용해요.
             </p>
           </div>
         )}

@@ -1,7 +1,8 @@
 // aiWidget.ts
-// 용도: 자연어 설명 → 커스텀 위젯 스펙(CustomWidgetSpec) 생성.
-//       사용자가 Anthropic API 키를 등록하면 Claude 가 스펙을 생성하고,
-//       키가 없으면 키워드 규칙 기반으로 생성한다(오프라인 폴백).
+// 용도: 자연어 설명 → 커스텀 위젯 스펙(CustomWidgetSpec) 생성. 3단계 폴백:
+//       1) 사용자 Anthropic API 키가 있으면 Claude 직접 호출
+//       2) 없으면 무료 AI(Puter.js — 키 불필요, 브라우저에서 직접 호출)
+//       3) 그것도 실패하면 키워드 규칙 기반(오프라인 폴백)
 //       정적 사이트라 서버가 없으므로 키는 이 브라우저의 localStorage 에만 저장된다.
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -66,6 +67,67 @@ async function generateWithClaude(prompt: string, apiKey: string): Promise<Custo
     .map((b) => b.text)
     .join("");
   const spec = JSON.parse(stripFence(text));
+  if (!isValidSpec(spec)) throw new Error("AI 응답이 위젯 스키마와 맞지 않습니다.");
+  return spec;
+}
+
+/* ==================== 무료 AI (Puter.js) ==================== */
+
+// Puter.js 를 필요할 때만 로드한다. 키 없이 쓸 수 있는 무료 브라우저 AI SDK.
+// 첫 호출 시 방문자에게 Puter 로그인 팝업이 뜰 수 있다(사용자 클릭 시점에만 호출됨).
+declare global {
+  interface Window {
+    puter?: { ai: { chat: (prompt: string, options?: Record<string, unknown>) => Promise<unknown> } };
+  }
+}
+
+let puterLoading: Promise<void> | null = null;
+
+function loadPuter(): Promise<void> {
+  if (window.puter) return Promise.resolve();
+  if (!puterLoading) {
+    puterLoading = new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://js.puter.com/v2/";
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => {
+        puterLoading = null;
+        reject(new Error("Puter SDK 로드 실패"));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return puterLoading;
+}
+
+// Puter 응답에서 텍스트를 최대한 안전하게 추출한다(버전에 따라 형태가 다름).
+function puterText(res: unknown): string {
+  if (typeof res === "string") return res;
+  const r = res as any;
+  const content = r?.message?.content ?? r?.text ?? r?.content;
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content.map((c: any) => (typeof c === "string" ? c : c?.text ?? "")).join("");
+  }
+  return String(res);
+}
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error("시간 초과")), ms)),
+  ]);
+}
+
+async function generateWithPuter(prompt: string): Promise<CustomWidgetSpec> {
+  await withTimeout(loadPuter(), 15_000);
+  if (!window.puter) throw new Error("Puter SDK 없음");
+  const res = await withTimeout(
+    window.puter.ai.chat(`${SYSTEM_PROMPT}\n\n사용자 요청: ${prompt}`),
+    45_000
+  );
+  const spec = JSON.parse(stripFence(puterText(res)));
   if (!isValidSpec(spec)) throw new Error("AI 응답이 위젯 스키마와 맞지 않습니다.");
   return spec;
 }
@@ -142,7 +204,7 @@ function generateFallback(prompt: string): CustomWidgetSpec {
 
 export interface GenerateResult {
   spec: CustomWidgetSpec;
-  source: "claude" | "fallback";
+  source: "claude" | "puter" | "fallback";
 }
 
 export async function generateWidget(prompt: string): Promise<GenerateResult> {
@@ -151,8 +213,13 @@ export async function generateWidget(prompt: string): Promise<GenerateResult> {
     try {
       return { spec: await generateWithClaude(prompt, apiKey), source: "claude" };
     } catch (e) {
-      console.warn("Claude 위젯 생성 실패 — 규칙 기반으로 폴백:", e);
+      console.warn("Claude 위젯 생성 실패 — 무료 AI 로 폴백:", e);
     }
+  }
+  try {
+    return { spec: await generateWithPuter(prompt), source: "puter" };
+  } catch (e) {
+    console.warn("무료 AI(Puter) 생성 실패 — 규칙 기반으로 폴백:", e);
   }
   return { spec: generateFallback(prompt), source: "fallback" };
 }
