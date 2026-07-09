@@ -41,7 +41,7 @@ export const OrgModal: React.FC<Props> = ({ org, onSave, onDelete, onClose }) =>
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && save()}
+            onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && save()}
             placeholder="소속 이름 (예: 밴드 동아리)"
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
           />

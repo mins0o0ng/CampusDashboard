@@ -98,10 +98,14 @@ const SEED_POLLS: Poll[] = [
 function migratePolls(): Poll[] {
   const legacy = read<Poll | null>("poll.festival-2026", null);
   const merged = SEED_POLLS.map((p) => (legacy && p.id === legacy.id ? legacy : p));
-  try {
-    localStorage.removeItem(NS + "poll.festival-2026");
-  } catch {
-    /* 무시 */
+  if (legacy) {
+    // 병합 결과를 먼저 영속화한 뒤에 구키를 제거해야 재방문 시 투표 기록이 유실되지 않는다.
+    write("polls", merged);
+    try {
+      localStorage.removeItem(NS + "poll.festival-2026");
+    } catch {
+      /* 무시 */
+    }
   }
   return merged;
 }
@@ -137,6 +141,13 @@ function todayMidnight(): Date {
   return new Date(new Date().toDateString());
 }
 
+// "YYYY-MM-DD" 를 로컬 자정으로 파싱한다.
+// new Date(string) 은 UTC 자정으로 해석되어 KST 등에서 D-day 가 하루 어긋난다.
+export function parseLocalDate(s: string): Date {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
 export function totalVotes(poll: Poll): number {
   return poll.options.reduce((s, o) => s + o.votes, 0);
 }
@@ -149,10 +160,10 @@ export function percent(poll: Poll, optionId: string, precomputedTotal?: number)
 }
 
 export function isClosed(poll: Poll): boolean {
-  return new Date(poll.deadline) < todayMidnight();
+  return parseLocalDate(poll.deadline) < todayMidnight();
 }
 
 export function dday(poll: Poll): number {
-  const ms = new Date(poll.deadline).getTime() - todayMidnight().getTime();
+  const ms = parseLocalDate(poll.deadline).getTime() - todayMidnight().getTime();
   return Math.ceil(ms / 86_400_000);
 }

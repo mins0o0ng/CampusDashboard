@@ -44,6 +44,12 @@ export const AddWidgetDialog: React.FC<Props> = ({ onAdd, onClose }) => {
           rows={3}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              submit();
+            }
+          }}
           placeholder={'예: "기말고사 12월 15일까지 디데이" / "MT 준비물 체크리스트: 침낭, 세면도구, 보드게임"'}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200"
         />

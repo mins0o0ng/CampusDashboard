@@ -10,7 +10,8 @@ function deadlineLabel(poll: Poll): string {
 
 export const PollWidget: React.FC = () => {
   const [polls, setPolls] = useState<Poll[]>(() => pollStore.loadAll());
-  const [activeId, setActiveId] = useState<string>(() => pollStore.loadAll()[0]?.id ?? "");
+  // 빈 문자열이면 아래 useMemo 가 첫 번째 투표로 폴백한다 — loadAll 중복 호출 방지.
+  const [activeId, setActiveId] = useState<string>("");
   const [selected, setSelected] = useState<string | null>(null);
   const [showList, setShowList] = useState(false);
 

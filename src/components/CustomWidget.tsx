@@ -1,5 +1,6 @@
 import React, { useCallback } from "react";
 import type { CustomWidgetSpec, WidgetColor } from "../types";
+import { parseLocalDate } from "../lib/store";
 
 const DOT: Record<WidgetColor, string> = {
   indigo: "bg-indigo-600",
@@ -15,7 +16,7 @@ interface Props {
 
 function ddayRemain(date: string): number {
   const today = new Date(new Date().toDateString());
-  return Math.ceil((new Date(date).getTime() - today.getTime()) / 86_400_000);
+  return Math.ceil((parseLocalDate(date).getTime() - today.getTime()) / 86_400_000);
 }
 
 export const CustomWidget: React.FC<Props> = ({ spec, onChange }) => {

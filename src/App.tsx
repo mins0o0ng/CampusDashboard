@@ -96,6 +96,9 @@ const App: React.FC = () => {
     if (orgModal.org) setOrgs((prev) => orgStore.remove(prev, orgModal.org!.id));
   }, [orgModal.org]);
 
+  const openAddOrg = useCallback(() => setOrgModal({ open: true, org: null }), []);
+  const openEditOrg = useCallback((org: Org) => setOrgModal({ open: true, org }), []);
+
   const deleteOrgDirect = useCallback((org: Org) => {
     if (window.confirm(`'${org.name}' 소속을 삭제할까요?`)) {
       setOrgs((prev) => orgStore.remove(prev, org.id));
@@ -114,9 +117,11 @@ const App: React.FC = () => {
   const addWidget = useCallback((spec: CustomWidgetSpec) => {
     setDashboard((prev) => {
       const i = `w${Date.now()}`;
+      // Infinity 는 JSON 직렬화 시 null 이 되어 저장이 깨진다 — 실제 최하단 y 를 계산한다.
+      const bottom = prev.layout.reduce((m, l) => Math.max(m, l.y + l.h), 0);
       const next: DashboardState = {
         items: [...prev.items, { i, kind: "custom", spec }],
-        layout: [...prev.layout, { i, x: 4, y: Infinity, w: 2, h: 3, minW: 1, minH: 2 }],
+        layout: [...prev.layout, { i, x: 4, y: bottom, w: 2, h: 3, minW: 1, minH: 2 }],
       };
       dashboardStore.save(next);
       return next;
@@ -175,8 +180,8 @@ const App: React.FC = () => {
       <Sidebar
         name={session.name}
         orgs={orgs}
-        onAddOrg={() => setOrgModal({ open: true, org: null })}
-        onEditOrg={(org) => setOrgModal({ open: true, org })}
+        onAddOrg={openAddOrg}
+        onEditOrg={openEditOrg}
         onDeleteOrg={deleteOrgDirect}
         onLogout={logout}
       />
