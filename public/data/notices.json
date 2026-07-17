@@ -1,7 +1,7 @@
 {
   "board": "공지사항",
   "board_code": 1,
-  "scraped_at": "2026-07-16T21:59:02",
+  "scraped_at": "2026-07-17T21:44:28",
   "keywords": [],
   "count": 9,
   "notices": [
@@ -10,10 +10,10 @@
       "title": "2026학년도 2학기 특수대학원 합격자 등록금 납부 안내",
       "author": "재무과",
       "date": "2026/07/16",
-      "views": 94,
+      "views": 146,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337896&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
       "has_file": false,
-      "is_new": true,
+      "is_new": false,
       "pinned": true,
       "matched": []
     },
@@ -22,7 +22,7 @@
       "title": "[긴급] 경북대학교 직원 사칭 물품 구매 및 견적 사기 주의 안내",
       "author": "시설과",
       "date": "2026/06/09",
-      "views": 3003,
+      "views": 3068,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337591&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
       "has_file": false,
       "is_new": false,
@@ -30,11 +30,11 @@
       "matched": []
     },
     {
-      "no": "250",
+      "no": "248",
       "title": "[언어교육센터]2026년 8월 외국어강좌 개설 및 접수 안내 ★개강: 8월 3일★",
       "author": "언어교육센터",
       "date": "2026/07/15",
-      "views": 148,
+      "views": 168,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337893&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -42,11 +42,11 @@
       "matched": []
     },
     {
-      "no": "249",
+      "no": "247",
       "title": "[입학과] 2027학년도 법학적성시험 안내 (7.19.(일))",
       "author": "입학과",
       "date": "2026/07/15",
-      "views": 263,
+      "views": 342,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337890&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -54,11 +54,11 @@
       "matched": []
     },
     {
-      "no": "248",
+      "no": "246",
       "title": "경북대학교 제4차 생활관(BTL) 부속시설(푸드코너, 편의점, 공동세탁실) 임대 입찰 공고",
       "author": "생활관",
       "date": "2026/07/14",
-      "views": 233,
+      "views": 274,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337887&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -66,11 +66,11 @@
       "matched": []
     },
     {
-      "no": "247",
+      "no": "245",
       "title": "도로 및 주차장 아스콘포장 작업에 따른 차량통행 주의 안내",
       "author": "시설과",
       "date": "2026/07/14",
-      "views": 104,
+      "views": 123,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337885&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -78,11 +78,11 @@
       "matched": []
     },
     {
-      "no": "246",
+      "no": "244",
       "title": "2026년 정읍시민장학재단 우수인재 장학금 장학생 선발 안내",
       "author": "학생과",
       "date": "2026/07/14",
-      "views": 238,
+      "views": 253,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337876&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -90,11 +90,11 @@
       "matched": []
     },
     {
-      "no": "245",
+      "no": "243",
       "title": "포스코청암재단 2027년도 비전장학생 모집 안내",
       "author": "학생과",
       "date": "2026/07/14",
-      "views": 296,
+      "views": 326,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337875&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -102,11 +102,11 @@
       "matched": []
     },
     {
-      "no": "244",
+      "no": "242",
       "title": "2026년 충남평생교육진흥원 재능키움 장학사업(2차) 장학생 선발 안내",
       "author": "학생과",
       "date": "2026/07/14",
-      "views": 142,
+      "views": 156,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337873&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
