@@ -1,7 +1,7 @@
 {
   "board": "공지사항",
   "board_code": 1,
-  "scraped_at": "2026-07-26T21:52:52",
+  "scraped_at": "2026-07-27T21:59:39",
   "keywords": [],
   "count": 9,
   "notices": [
@@ -10,7 +10,7 @@
       "title": "2026학년도 2학기 재학생 등록금(분할납부, 차등납부 포함) 납부방법, 일정 등 총괄 안내",
       "author": "재무과",
       "date": "2026/07/23",
-      "views": 696,
+      "views": 926,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337954&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -22,7 +22,7 @@
       "title": "[긴급] 경북대학교 직원 사칭 물품 구매 및 견적 사기 주의 안내",
       "author": "시설과",
       "date": "2026/06/09",
-      "views": 3951,
+      "views": 4022,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337591&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
       "has_file": false,
       "is_new": false,
@@ -30,11 +30,23 @@
       "matched": []
     },
     {
-      "no": "243",
+      "no": "242",
+      "title": "경북대학교 박사 후 연수(Post-Doc.) 연구원 규정 일부 개정(안) 공고",
+      "author": "연구진흥과",
+      "date": "2026/07/27",
+      "views": 77,
+      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337969&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
+      "has_file": true,
+      "is_new": true,
+      "pinned": false,
+      "matched": []
+    },
+    {
+      "no": "241",
       "title": "[앵커 3-1] 대학-기업 공동 기술/제품 기획 지원(2026년도)(3차)(~8.18.(화))",
       "author": "지산학연협력기술연구소",
       "date": "2026/07/24",
-      "views": 70,
+      "views": 104,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337960&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -42,11 +54,11 @@
       "matched": []
     },
     {
-      "no": "242",
+      "no": "240",
       "title": "[앵커 3-1] 대학 기술 활용 사업화 지원(2026년도)(4차)(~8.18.(화))",
       "author": "지산학연협력기술연구소",
       "date": "2026/07/24",
-      "views": 59,
+      "views": 82,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337959&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -54,11 +66,11 @@
       "matched": []
     },
     {
-      "no": "241",
+      "no": "239",
       "title": "[앵커 3-1] 대학 테스트베드/인프라 활용 실증 개발 지원(2026년도)(4차)(~8.18.(화))",
       "author": "지산학연협력기술연구소",
       "date": "2026/07/24",
-      "views": 59,
+      "views": 87,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337958&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -66,11 +78,11 @@
       "matched": []
     },
     {
-      "no": "239",
+      "no": "237",
       "title": "[지역전략산업혁신연구소] 「2026년도 대학-기업 협업 프로젝트」 참여기업 2차모집 공고",
       "author": "지역전략산업혁신연구소",
       "date": "2026/07/23",
-      "views": 135,
+      "views": 165,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337953&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -78,11 +90,11 @@
       "matched": []
     },
     {
-      "no": "238",
+      "no": "236",
       "title": "[IT교육센터]2026년 AI.SW혁신인재양성 7월 개설 안내[50~90%할인, 교재제공]",
       "author": "IT교육센터",
       "date": "2026/07/23",
-      "views": 137,
+      "views": 150,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337950&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -90,24 +102,12 @@
       "matched": []
     },
     {
-      "no": "237",
+      "no": "235",
       "title": "[BK21]대학원생 맞춤형 IT역량강화 비교과 개설 안내[1만원/교재제공]",
       "author": "IT교육센터",
       "date": "2026/07/23",
-      "views": 113,
+      "views": 132,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337949&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
-      "has_file": true,
-      "is_new": false,
-      "pinned": false,
-      "matched": []
-    },
-    {
-      "no": "236",
-      "title": "경북대학교 제4차 생활관BTL사업(상주캠퍼스) 부속시설(세탁실) 임대 입찰 공고(2차) 안내",
-      "author": "상주캠퍼스 생활관 분관",
-      "date": "2026/07/22",
-      "views": 136,
-      "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337939&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
       "pinned": false,
