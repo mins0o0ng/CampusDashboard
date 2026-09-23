@@ -1,7 +1,7 @@
 {
   "board": "공지사항",
   "board_code": 1,
-  "scraped_at": "2026-09-22T23:24:31",
+  "scraped_at": "2026-09-23T23:23:15",
   "keywords": [],
   "count": 10,
   "notices": [
@@ -10,7 +10,7 @@
       "title": "[긴급] 경북대학교 직원 사칭 물품 구매 및 견적 사기 주의 안내",
       "author": "시설과",
       "date": "2026/06/09",
-      "views": 6225,
+      "views": 6285,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337591&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
       "has_file": false,
       "is_new": false,
@@ -18,11 +18,11 @@
       "matched": []
     },
     {
-      "no": "266",
+      "no": "264",
       "title": "2026학년도 2학기 대학원 수료생 등록금 2차 납부 안내",
       "author": "재무과",
       "date": "2026/09/18",
-      "views": 228,
+      "views": 251,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338406&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": false,
       "is_new": false,
@@ -30,11 +30,11 @@
       "matched": []
     },
     {
-      "no": "265",
+      "no": "263",
       "title": "2026학년도 2학기 첨성인 아너스 클럽 운영 계획 안내",
       "author": "교무과",
       "date": "2026/09/18",
-      "views": 255,
+      "views": 294,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338401&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -42,11 +42,11 @@
       "matched": []
     },
     {
-      "no": "264",
+      "no": "262",
       "title": "[글로벌교육센터]2026년 10월 외국어강좌 개설 및 접수 안내 ★개강: 10월 1일★",
       "author": "언어교육센터",
       "date": "2026/09/18",
-      "views": 150,
+      "views": 167,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338399&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -54,11 +54,11 @@
       "matched": []
     },
     {
-      "no": "263",
+      "no": "261",
       "title": "2026년 하반기 (재)춘천인재육성장학재단 봄내장학생 선발 안내",
       "author": "학생과",
       "date": "2026/09/17",
-      "views": 158,
+      "views": 188,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338396&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -66,11 +66,11 @@
       "matched": []
     },
     {
-      "no": "262",
+      "no": "260",
       "title": "[대학원혁신] 대학원 동문선배 멘토링",
       "author": "진로취업과",
       "date": "2026/09/17",
-      "views": 164,
+      "views": 174,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338395&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -78,11 +78,11 @@
       "matched": []
     },
     {
-      "no": "261",
+      "no": "259",
       "title": "[대학원혁신] 대학원생 직무교육(미래자동차)",
       "author": "진로취업과",
       "date": "2026/09/17",
-      "views": 96,
+      "views": 101,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338394&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -90,11 +90,11 @@
       "matched": []
     },
     {
-      "no": "260",
+      "no": "258",
       "title": "「경북대학교 융합연구동 신축사업 설계공모」 서면질의에 대한 답변 공개",
       "author": "시설과",
       "date": "2026/09/16",
-      "views": 190,
+      "views": 193,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338383&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -102,11 +102,11 @@
       "matched": []
     },
     {
-      "no": "259",
+      "no": "257",
       "title": "2026년 제13회 수림재단 동교인재상 선발 안내",
       "author": "학생과",
       "date": "2026/09/15",
-      "views": 368,
+      "views": 390,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338373&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -114,11 +114,11 @@
       "matched": []
     },
     {
-      "no": "258",
+      "no": "256",
       "title": "[세포기질연구소(지역협업기술센터)] 2026년도 공동 개발 및 기술사업화 촉진 프로젝트 공고",
       "author": "세포기질연구소",
       "date": "2026/09/15",
-      "views": 208,
+      "views": 220,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338371&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
