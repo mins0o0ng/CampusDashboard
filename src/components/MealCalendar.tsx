@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { RESTAURANTS, type MealSection } from "../lib/staticData";
+import MealImportDialog from "./MealImportDialog";
 import {
   MEAL_SLOTS,
   countDrafts,
@@ -129,6 +130,7 @@ export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, d
     return { year: now.getFullYear(), month: now.getMonth() };
   });
   const [editing, setEditing] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
   const [token, setToken] = useState(() => tokenStore.load());
   const [showPublish, setShowPublish] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -160,6 +162,23 @@ export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, d
       }
     },
     [drafts, published, shop, onDraftsChange]
+  );
+
+  // 붙여넣기로 가져온 한 주치를 한 번에 임시저장한다(같은 날짜·식당은 덮어씀).
+  const applyWeek = useCallback(
+    (days: Record<string, MealSection[]>) => {
+      const next: MealTable = { ...drafts };
+      for (const [day, sections] of Object.entries(days)) next[day] = { ...(next[day] ?? {}), [shop]: sections };
+      draftStore.save(next);
+      onDraftsChange(next);
+      const first = Object.keys(days).sort()[0];
+      if (first) {
+        const [y, m] = first.split("-").map(Number);
+        setCursor({ year: y, month: m - 1 });
+      }
+      setMessage({ ok: true, text: `${Object.keys(days).length}일치 식단을 임시저장했어요. 확인 후 "게시하기"를 눌러 주세요.` });
+    },
+    [drafts, shop, onDraftsChange]
   );
 
   const publish = async () => {
@@ -217,7 +236,17 @@ export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, d
           <button onClick={onClose} aria-label="닫기" className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
         </header>
 
-        <p className="text-[11px] text-gray-400 mb-2">날짜를 눌러 식단을 입력하세요. 입력한 내용은 먼저 이 브라우저에 임시저장되고, "게시" 해야 모두에게 보여요.</p>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <p className="text-[11px] text-gray-400">
+            생협 페이지를 붙여넣으면 일주일치가 자동으로 채워져요. 날짜를 눌러 직접 고칠 수도 있어요. 임시저장 후 "게시" 해야 모두에게 보여요.
+          </p>
+          <button
+            onClick={() => setImporting(true)}
+            className="shrink-0 text-[12px] font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg px-3 py-1.5"
+          >
+            ⤓ 생협 페이지 붙여넣기
+          </button>
+        </div>
 
         <div className="grid grid-cols-7 gap-1 mb-1">
           {WEEKDAYS.map((w, i) => (
@@ -310,6 +339,9 @@ export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, d
         </footer>
       </div>
 
+      {importing && (
+        <MealImportDialog shop={shop} onShopChange={onShopChange} onApply={applyWeek} onClose={() => setImporting(false)} />
+      )}
       {editing && (
         <DayEditor
           key={`${editing}-${shop}`}
