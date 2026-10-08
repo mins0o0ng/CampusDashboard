@@ -1,12 +1,17 @@
 name: Scrape KNU data
 
-# 경북대 공지·학식을 주기적으로 수집해 public/data/*.json 으로 커밋.
-# 로컬 개발(vite dev)의 실데이터 및 배포 빌드의 폴백으로 사용됨.
-# (배포는 deploy-pages.yml 이 빌드 시점에 스크래퍼를 직접 실행해 최신 데이터를 반영)
+# 경북대 공지·학식을 수집해 public/data/*.json 으로 커밋한다.
+# 커밋이 끝나면 deploy-pages.yml 이 workflow_run 으로 이어서 배포한다.
+#
+# 학식(coop.knu.ac.kr, 가비아 호스팅)은 해외 IP 를 403 으로 차단한다.
+# GitHub 호스티드 러너(미국 Azure)에서는 수집이 불가능하므로, 학식 잡만
+# 저장소 변수 MEAL_RUNNER 로 지정한 러너(예: 국내 self-hosted 러너 라벨
+# "self-hosted")에서 실행한다. 미설정 시 ubuntu-latest 에서 시도하며,
+# 차단되면 스크래퍼가 실패 종료해 기존 JSON 을 덮어쓰지 않는다.
 
 on:
   schedule:
-    - cron: "0 21 * * *"   # 매일 06:00 KST (21:00 UTC)
+    - cron: "0 21 * * *"   # 매일 06:00 KST (21:00 UTC) — GitHub 사정으로 수 시간 지연될 수 있음
   workflow_dispatch:        # 수동 실행 버튼
   push:
     branches: [main]
@@ -15,31 +20,70 @@ on:
 permissions:
   contents: write           # 수집 결과를 리포에 커밋하기 위함
 
+concurrency:
+  group: scrape
+  cancel-in-progress: false
+
 jobs:
-  scrape:
+  notices:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install deps
-        run: pip install -r scrapers/requirements.txt
-
-      - name: Scrape notices & meal
+      - run: pip install -r scrapers/requirements.txt
+      - name: Scrape notices
         run: |
-          mkdir -p public/data
-          python scrapers/knu_notice_scraper.py --board 1 --pages 1 --out public/data/notices.json
-          python scrapers/knu_notice_scraper.py --academic academic --pages 1 --out public/data/notices_academic.json || true
-          for shop in 35 36 46; do
-            python scrapers/knu_meal_scraper.py --shop "$shop" --out "public/data/meal_${shop}.json" || true
-          done
-          python scrapers/knu_meal_scraper.py --out public/data/meal.json || true
+          mkdir -p out
+          python scrapers/knu_notice_scraper.py --board 1 --pages 1 --out out/notices.json
+          python scrapers/knu_notice_scraper.py --academic academic --pages 1 --out out/notices_academic.json || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: notices
+          path: out/
 
+  meal:
+    runs-on: ${{ vars.MEAL_RUNNER || 'ubuntu-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r scrapers/requirements.txt
+      - name: Scrape meals (실패한 식당은 건너뜀 → 기존 데이터 유지)
+        run: |
+          mkdir -p out
+          ok=0
+          for shop in 35 36 46; do
+            if python scrapers/knu_meal_scraper.py --shop "$shop" --out "out/meal_${shop}.json"; then
+              ok=$((ok + 1))
+            fi
+          done
+          [ -f out/meal_35.json ] && cp out/meal_35.json out/meal.json
+          if [ "$ok" -eq 0 ]; then
+            echo "::warning title=학식 수집 실패::coop.knu.ac.kr 접근이 차단되었습니다. 국내 IP 러너(vars.MEAL_RUNNER)가 필요합니다."
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meal
+          path: out/
+          if-no-files-found: ignore
+
+  commit:
+    needs: [notices, meal]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
       - name: Commit if changed
         run: |
+          mkdir -p public/data
+          cp out/*.json public/data/ 2>/dev/null || echo "수집된 파일 없음"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add public/data
@@ -47,5 +91,7 @@ jobs:
             echo "변경 없음 — 커밋 생략"
           else
             git commit -m "chore(data): refresh KNU notices & meal [skip ci]"
+            # 수집 중에 식단 수동 게시(meal_manual.json) 커밋이 들어왔을 수 있다
+            git pull --rebase origin main
             git push
           fi

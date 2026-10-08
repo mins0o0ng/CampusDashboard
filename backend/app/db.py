@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import sqlite3
 from contextlib import contextmanager
+from datetime import date, timedelta
 from typing import Iterator
 
 DB_PATH = os.environ.get("CAMPUS_DB", os.path.join(os.path.dirname(__file__), "..", "campus.db"))
@@ -55,7 +56,8 @@ SEED_POLL = {
     "title": "축제 초청 가수 투표",
     "owner": "학생회",
     "total": 32,
-    "deadline": "2026-06-29",
+    # 고정 날짜는 시간이 지나면 마감 상태가 되어 투표·테스트가 깨진다 → 오늘 기준 상대 날짜
+    "deadline": (date.today() + timedelta(days=14)).isoformat(),
     "options": [("o1", "데이식스"), ("o2", "아이브"), ("o3", "잔나비")],
 }
 

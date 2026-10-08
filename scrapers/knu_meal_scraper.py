@@ -22,6 +22,7 @@ import re
 import sys
 from dataclasses import dataclass, asdict
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Optional
 
 import requests
@@ -38,6 +39,8 @@ WEEKDAYS = ["월", "화", "수", "목", "금"]  # 컬럼 인덱스 0~4
 MEAL_LABELS = ("조식", "중식", "석식")
 # '메뉴명 ￦ 6,000' 패턴에서 가격 추출
 PRICE_RE = re.compile(r"￦\s*([\d,]+)")
+# Actions 러너는 UTC 라서 요일·수집시각을 한국 시간 기준으로 계산한다.
+KST = ZoneInfo("Asia/Seoul")
 
 
 @dataclass
@@ -57,10 +60,21 @@ class Meal:
     items: list[MealItem]
 
 
+class BlockedError(RuntimeError):
+    """호스팅이 요청을 차단(403 리다이렉트)했을 때."""
+
+
 def fetch_html(shop: int) -> str:
-    """식단 페이지 HTML 을 받아온다."""
+    """식단 페이지 HTML 을 받아온다.
+
+    가비아 호스팅은 차단한 IP(예: 해외 GitHub Actions 러너)를
+    errdoc.gabia.io/403.html 로 302 리다이렉트하고 200 을 돌려준다.
+    이를 성공으로 오인하면 '0끼' 가 저장되므로 명시적으로 실패시킨다.
+    """
     resp = requests.get(BASE, params={"shop_sqno": shop}, headers=HEADERS, timeout=15)
     resp.raise_for_status()
+    if "coop.knu.ac.kr" not in resp.url or "403 Forbidden" in resp.text[:2000]:
+        raise BlockedError(f"생협 사이트 접근 차단됨 (최종 URL: {resp.url})")
     resp.encoding = resp.apparent_encoding or "utf-8"
     return resp.text
 
@@ -121,7 +135,7 @@ def resolve_day(day: Optional[str]) -> tuple[int, str]:
     """요일 인자(또는 오늘) → (컬럼 인덱스, 요일명). 주말이면 월요일로."""
     if day and day in WEEKDAYS:
         return WEEKDAYS.index(day), day
-    wd = datetime.now().weekday()  # 0=월 ~ 6=일
+    wd = datetime.now(KST).weekday()  # 0=월 ~ 6=일
     if wd > 4:  # 토/일 → 월요일 식단
         return 0, WEEKDAYS[0]
     return wd, WEEKDAYS[wd]
@@ -137,12 +151,19 @@ def main() -> None:
     args = parser.parse_args()
 
     day_index, day_name = resolve_day(args.day)
-    meals = parse_meals(fetch_html(args.shop), day_index)
+    try:
+        html = fetch_html(args.shop)
+    except (requests.RequestException, BlockedError) as e:
+        # 기존 파일을 덮어쓰지 않고 실패 종료 → 마지막 정상 데이터 유지
+        print(f"수집 실패: {e}", file=sys.stderr)
+        sys.exit(2)
+    meals = parse_meals(html, day_index)
 
     payload = {
         "shop_code": args.shop,
+        "status": "ok",
         "day": day_name,
-        "scraped_at": datetime.now().isoformat(timespec="seconds"),
+        "scraped_at": datetime.now(KST).isoformat(timespec="seconds"),
         "meals": [
             {"meal": m.meal, "items": [asdict(i) for i in m.items]} for m in meals
         ],

@@ -34,6 +34,8 @@ export interface MealSection {
 }
 
 export interface MealPayload {
+  // "ok" = 정상 수집, "unavailable" = 수집 불가(생협 사이트가 해외 IP 차단 등). 구버전 파일엔 없음.
+  status?: "ok" | "unavailable";
   day: string | null;
   scraped_at: string;
   meals: MealSection[];

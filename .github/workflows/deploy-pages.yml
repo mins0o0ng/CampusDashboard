@@ -1,14 +1,16 @@
 name: Deploy to GitHub Pages
 
 # 실제 React 앱(Vite 빌드)을 GitHub Pages 로 배포.
-# 빌드 직전에 스크래퍼를 실행해 최신 공지·학식 JSON 을 함께 배포한다.
-# 스크래퍼 실패 시 리포에 커밋된 public/data 를 그대로 사용(무중단 폴백).
+# 데이터는 scrape.yml 이 커밋한 public/data 를 그대로 사용한다.
+# (scrape.yml 이 끝나면 workflow_run 으로 자동 재배포 — 봇 커밋은 [skip ci] 라 push 로는 안 뜸)
 
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: "30 21 * * *" # 매일 06:30 KST — 최신 데이터로 재빌드
+  workflow_run:
+    workflows: ["Scrape KNU data"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -28,20 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-
-      - name: Scrape latest KNU data (fallback to committed data on failure)
-        continue-on-error: true
-        run: |
-          pip install -r scrapers/requirements.txt
-          python scrapers/knu_notice_scraper.py --board 1 --pages 1 --out public/data/notices.json || true
-          for shop in 35 36 46; do
-            python scrapers/knu_meal_scraper.py --shop "$shop" --out "public/data/meal_${shop}.json" || true
-          done
-          python scrapers/knu_meal_scraper.py --out public/data/meal.json || true
+          ref: main # workflow_run 시 수집 커밋이 반영된 최신 main 을 빌드
 
       - uses: actions/setup-node@v4
         with:
