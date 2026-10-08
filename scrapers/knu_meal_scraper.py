@@ -109,6 +109,42 @@ def _parse_cell(text: str) -> list[MealItem]:
     return items
 
 
+TIME_RE = re.compile(r"\(?\s*(\d{1,2})(?::(\d{2})|시)\s*~\s*(\d{1,2})(?::(\d{2})|시)\s*\)?")
+LABELS = {"특식", "일품", "정식", "메뉴", "분류", "구분"}
+
+
+def _parse_li_cell(cell) -> list[MealItem]:
+    """<ul class="menu_im"><li>메뉴<p>￦ 5,500</p></li>… 구조의 하루치 셀 → MealItem 리스트.
+
+    첫 <li> 는 '특식<br/>10시~14:30<br/>육회비빔밥' 처럼 시간대가 섞여 있으므로 줄 단위로 분리한다.
+    (src/lib/mealImport.ts 의 parseDayCell 과 같은 규칙)
+    """
+    time: Optional[str] = None
+    parsed: list[tuple[str, Optional[int]]] = []
+    for li in cell.find_all("li"):
+        for br in li.find_all("br"):
+            br.replace_with("\n")
+        lines = [re.sub(r"\s+", " ", l).strip() for l in li.get_text("\n").split("\n")]
+        price: Optional[int] = None
+        names: list[str] = []
+        for line in filter(None, lines):
+            pm = PRICE_RE.search(line)
+            if pm:
+                price = int(pm.group(1).replace(",", ""))
+                continue
+            tm = TIME_RE.search(line)
+            if tm:
+                h1, m1, h2, m2 = tm.groups()
+                time = f"{int(h1):02d}:{m1 or '00'}~{int(h2):02d}:{m2 or '00'}"
+            rest = TIME_RE.sub("", line).strip()
+            if rest and rest not in LABELS:
+                names.append(rest)
+        name = " ".join(names).replace("★", "").replace("☆", "").strip(" ·,")
+        if name:
+            parsed.append((name[:60], price))
+    return [MealItem(name=n, price=p, time=time) for n, p in parsed]
+
+
 def parse_meals(html: str, day_index: int) -> list[Meal]:
     """식단 HTML → 지정 요일의 중식/석식 Meal 리스트."""
     soup = BeautifulSoup(html, "html.parser")
@@ -125,7 +161,8 @@ def parse_meals(html: str, day_index: int) -> list[Meal]:
         cells = row.find_all(["td", "th"])
         if day_index >= len(cells):
             continue
-        items = _parse_cell(cells[day_index].get_text(" ", strip=True))
+        cell = cells[day_index]
+        items = _parse_li_cell(cell) if cell.find("li") else _parse_cell(cell.get_text(" ", strip=True))
         if items:
             meals.append(Meal(meal=label, items=items))
     return meals
