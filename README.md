@@ -8,18 +8,28 @@
 
 실제 React 앱(`src/`, Vite 빌드)이 GitHub Pages 로 배포됩니다.
 데모 로그인(학번·이름 입력) 후 대시보드 진입. 시간표·투표가 실제로 동작하며 변경사항은 브라우저(localStorage)에 저장됩니다.
-**공지·학식은 실데이터** — 배포 워크플로우가 빌드 직전에 스크래퍼를 실행해
-최신 `data/*.json` 을 함께 배포하고, 매일 06:30 KST 에 자동 재배포됩니다.
-**별도 서버가 없습니다.**
+**공지·학식은 실데이터** — `scrape.yml` 이 매일 수집해 `public/data/*.json` 으로 커밋하고,
+끝나면 `deploy-pages.yml` 이 이어서(workflow_run) 재배포합니다. **별도 서버가 없습니다.**
 
 ```
-deploy-pages.yml (push to main + cron 매일)
-  → scrapers/*.py 실행 → public/data/notices.json, meal.json 생성
-  → npm run build (Vite) → dist/ 배포
-  → 앱이 ./data/*.json fetch → 공지·학식 위젯 렌더
+scrape.yml (매일 06:00 KST, 수 시간 지연될 수 있음)
+  ├ notices 잡 (ubuntu-latest)        → notices.json
+  ├ meal 잡   (vars.MEAL_RUNNER)      → meal_<식당>.json
+  └ commit 잡 → public/data 커밋
+        ↓ workflow_run
+deploy-pages.yml → npm run build → Pages 배포 → 앱이 ./data/*.json fetch
 ```
 > Pages 는 저장소 **Settings → Pages → Source: GitHub Actions** 로 설정되어 있어야 합니다.
-> `scrape.yml` 은 로컬 개발용 실데이터(`public/data`)를 매일 커밋합니다(배포 폴백 겸용).
+
+### ⚠️ 학식 수집에는 국내 IP 러너가 필요합니다
+생협 사이트(coop.knu.ac.kr, 가비아 호스팅)는 해외 IP 를 `errdoc.gabia.io/403.html` 로 차단합니다.
+GitHub 호스티드 러너는 미국 IP 라서 학식을 가져올 수 없습니다(SSO 문제가 아님).
+1. 국내 PC/서버(예: Oracle Cloud 서울·춘천 무료 VM)에 **self-hosted runner** 를 등록
+   (Settings → Actions → Runners → New self-hosted runner)
+2. Settings → Secrets and variables → Actions → **Variables** 에 `MEAL_RUNNER = self-hosted` 추가
+
+설정 전에는 스크래퍼가 차단을 감지해 실패 종료하고(기존 JSON 유지), 위젯은
+"학식 정보를 가져오지 못했어요 + 생협 페이지 바로가기" 를 표시합니다.
 
 ## 이번 버전에 구현된 기능
 

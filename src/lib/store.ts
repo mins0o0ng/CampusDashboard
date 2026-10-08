@@ -55,13 +55,21 @@ export const timetableStore = {
 
 /* ============================ 투표 스토어 ============================ */
 
+// 시드 투표 마감일은 오늘 기준 상대 날짜로 만든다.
+// 고정 날짜를 쓰면 시간이 지나 모든 투표가 '마감됨' 이 되어 데모가 동작하지 않는다.
+function daysFromNow(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 const SEED_POLLS: Poll[] = [
   {
     id: "festival-2026",
     title: "축제 초청 가수 투표",
     owner: "학생회",
     total: 32,
-    deadline: "2026-08-31",
+    deadline: daysFromNow(14),
     options: [
       { id: "o1", label: "데이식스", votes: 9 },
       { id: "o2", label: "아이브", votes: 5 },
@@ -73,7 +81,7 @@ const SEED_POLLS: Poll[] = [
     title: "2학기 MT 날짜 선호 조사",
     owner: "컴퓨터공학과",
     total: 32,
-    deadline: "2026-07-20",
+    deadline: daysFromNow(7),
     options: [
       { id: "o1", label: "9/4(금)~9/5(토)", votes: 7 },
       { id: "o2", label: "9/11(금)~9/12(토)", votes: 4 },
@@ -85,7 +93,7 @@ const SEED_POLLS: Poll[] = [
     title: "동아리 회식 메뉴",
     owner: "블로우파이프 동아리",
     total: 14,
-    deadline: "2026-07-05",
+    deadline: daysFromNow(3),
     options: [
       { id: "o1", label: "삼겹살", votes: 5 },
       { id: "o2", label: "치킨+맥주", votes: 4 },
@@ -94,13 +102,16 @@ const SEED_POLLS: Poll[] = [
   },
 ];
 
+// v2: 고정 마감일 시드로 저장된 구버전(전부 마감됨)을 버리고 새 시드로 시작한다.
+const POLLS_KEY = "polls.v2";
+
 // 구버전(단일 투표) 저장분을 목록 형태로 흡수한다.
 function migratePolls(): Poll[] {
   const legacy = read<Poll | null>("poll.festival-2026", null);
-  const merged = SEED_POLLS.map((p) => (legacy && p.id === legacy.id ? legacy : p));
+  const merged = SEED_POLLS.map((p) => (legacy && p.id === legacy.id ? { ...legacy, deadline: p.deadline } : p));
   if (legacy) {
     // 병합 결과를 먼저 영속화한 뒤에 구키를 제거해야 재방문 시 투표 기록이 유실되지 않는다.
-    write("polls", merged);
+    write(POLLS_KEY, merged);
     try {
       localStorage.removeItem(NS + "poll.festival-2026");
     } catch {
@@ -112,12 +123,12 @@ function migratePolls(): Poll[] {
 
 export const pollStore = {
   loadAll(): Poll[] {
-    const stored = read<Poll[] | null>("polls", null);
+    const stored = read<Poll[] | null>(POLLS_KEY, null);
     if (stored && stored.length > 0) return stored;
     return migratePolls();
   },
   saveAll(polls: Poll[]): void {
-    write("polls", polls);
+    write(POLLS_KEY, polls);
   },
   vote(polls: Poll[], pollId: string, optionId: string): Poll[] {
     const next = polls.map((p) => {

@@ -4,7 +4,7 @@
 핵심:
 - 시간표: 사용자별 CRUD (X-User-Id 헤더로 사용자 구분)
 - 투표: 서버측 1인 1표 강제(votes 테이블 PK), 마감 검사
-- 공지/학식: 스크래퍼가 떨군 docs/data/*.json 서빙
+- 공지/학식: 스크래퍼가 떨군 public/data/*.json 서빙
 
 실행:
     pip install -r requirements.txt
@@ -41,7 +41,7 @@ app.add_middleware(
 
 DATA_DIR = os.path.realpath(
     os.environ.get(
-        "CAMPUS_DATA_DIR", os.path.join(os.path.dirname(__file__), "..", "..", "docs", "data")
+        "CAMPUS_DATA_DIR", os.path.join(os.path.dirname(__file__), "..", "..", "public", "data")
     )
 )
 
