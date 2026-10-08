@@ -39,6 +39,12 @@ jobs:
           cache: npm
 
       - name: Build app
+        # Supabase 연결(투표 공유): 저장소 Settings → Secrets and variables → Actions → Variables 에
+        # SUPABASE_URL, SUPABASE_ANON_KEY 를 넣으면 켜진다. 없으면 브라우저 저장 모드로 빌드된다.
+        # anon 키는 공개용 키라 Variables(비밀 아님)에 둬도 된다 — 권한은 DB 의 RLS·함수가 막는다.
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
         run: |
           npm ci
           npm run build
