@@ -91,5 +91,7 @@ jobs:
             echo "변경 없음 — 커밋 생략"
           else
             git commit -m "chore(data): refresh KNU notices & meal [skip ci]"
+            # 수집 중에 식단 수동 게시(meal_manual.json) 커밋이 들어왔을 수 있다
+            git pull --rebase origin main
             git push
           fi
