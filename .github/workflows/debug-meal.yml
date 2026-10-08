@@ -9,12 +9,13 @@ on:
     paths: [".github/workflows/debug-meal.yml"]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   archive:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - run: pip install beautifulsoup4 requests
       - name: Fetch wayback snapshots
         run: |
@@ -37,12 +38,15 @@ jobs:
               tables = soup.find_all("table")
               if not tables:
                   continue
-              import base64, gzip
-              print("\n######## USING", ts, orig, "bytes:", len(html))
-              blob = base64.b64encode(gzip.compress(html)).decode()
-              print("B64GZ_BEGIN")
-              for i in range(0, len(blob), 4000):
-                  print("B64:" + blob[i:i+4000])
-              print("B64GZ_END")
+              import os
+              os.makedirs("scrapers/fixtures", exist_ok=True)
+              open("scrapers/fixtures/coop_meal_sample.html", "wb").write(html)
+              print("saved", ts, orig, len(html))
               break
           PY
+      - name: Commit fixture
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scrapers/fixtures
+          git commit -m "test: add archived coop meal page fixture (Wayback)" && git push || echo "no change"
