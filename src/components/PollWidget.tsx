@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import type { Poll } from "../types";
 import { pollStore, percent, totalVotes, voterCount, hasVoted, dday, isClosed, type NewPoll } from "../lib/store";
+import { pollBackend } from "../lib/pollBackend";
 
 function deadlineLabel(poll: Poll): string {
   if (isClosed(poll)) return "마감됨";
@@ -111,7 +112,11 @@ interface Props {
 }
 
 export const PollWidget: React.FC<Props> = ({ userName }) => {
-  const [polls, setPolls] = useState<Poll[]>(() => pollStore.loadAll());
+  // 공유 모드(Supabase)는 서버에서 불러오고, 아니면 이 브라우저 저장분으로 바로 시작한다.
+  const [polls, setPolls] = useState<Poll[]>(() => (pollBackend.shared ? [] : pollStore.loadAll()));
+  const [loading, setLoading] = useState(pollBackend.shared);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   // 빈 문자열이면 아래 useMemo 가 첫 번째 투표로 폴백한다 — loadAll 중복 호출 방지.
   const [activeId, setActiveId] = useState<string>("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -134,17 +139,48 @@ export const PollWidget: React.FC<Props> = ({ userName }) => {
     [poll]
   );
 
-  const submit = useCallback(() => {
-    if (!poll || selected.length === 0) return;
-    setPolls(pollStore.vote(polls, poll.id, selected));
-    setSelected([]);
-  }, [polls, poll, selected]);
+  // 모든 쓰기는 갱신된 목록을 돌려준다. 서버 규칙 위반(이미 투표함·마감 등)은 메시지로 보여 준다.
+  const run = useCallback(async (action: () => Promise<Poll[]>): Promise<Poll[] | null> => {
+    setBusy(true);
+    setError("");
+    try {
+      const next = await action();
+      setPolls(next);
+      return next;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "요청에 실패했습니다.");
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  }, []);
 
-  const cancel = useCallback(() => {
+  // 공유 모드: 처음 열 때와 탭으로 돌아올 때 다른 사람의 투표를 반영한다.
+  useEffect(() => {
+    if (!pollBackend.shared) return;
+    const refresh = () =>
+      pollBackend
+        .list()
+        .then((next) => {
+          setPolls(next);
+          setError("");
+        })
+        .catch((e) => setError(e instanceof Error ? e.message : "투표를 불러오지 못했습니다."))
+        .finally(() => setLoading(false));
+    refresh();
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, []);
+
+  const submit = useCallback(async () => {
+    if (!poll || selected.length === 0) return;
+    if (await run(() => pollBackend.vote(polls, poll.id, selected))) setSelected([]);
+  }, [polls, poll, selected, run]);
+
+  const cancel = useCallback(async () => {
     if (!poll || !window.confirm("투표를 취소할까요? 취소하면 다시 투표할 수 있어요.")) return;
-    setPolls(pollStore.cancel(polls, poll.id));
-    setSelected([]);
-  }, [polls, poll]);
+    if (await run(() => pollBackend.cancel(polls, poll.id))) setSelected([]);
+  }, [polls, poll, run]);
 
   const pickPoll = useCallback((id: string) => {
     setActiveId(id);
@@ -153,24 +189,53 @@ export const PollWidget: React.FC<Props> = ({ userName }) => {
   }, []);
 
   const create = useCallback(
-    (input: NewPoll) => {
-      const next = pollStore.create(polls, input, userName);
-      setPolls(next);
-      pickPoll(next[0].id);
+    async (input: NewPoll) => {
+      const next = await run(() => pollBackend.create(polls, input, userName));
+      if (next?.[0]) pickPoll(next[0].id);
     },
-    [polls, userName, pickPoll]
+    [polls, userName, pickPoll, run]
   );
 
   const remove = useCallback(
-    (p: Poll) => {
+    async (p: Poll) => {
       if (!window.confirm(`'${p.title}' 투표를 삭제할까요?`)) return;
-      setPolls(pollStore.remove(polls, p.id));
-      if (p.id === poll?.id) setActiveId("");
+      const next = await run(() => pollBackend.remove(polls, p.id));
+      if (next && p.id === poll?.id) setActiveId("");
     },
-    [polls, poll]
+    [polls, poll, run]
   );
 
-  if (!poll) return null;
+  const isMine = (p: Poll) => p.mine === true || (!!p.createdBy && p.createdBy === userName);
+
+  if (!poll) {
+    return (
+      <section className="h-full rounded-2xl bg-white border border-gray-200 shadow-sm p-5 overflow-auto">
+        <header className="flex items-center gap-2 mb-3">
+          <span className="w-2 h-2 rounded-full bg-amber-500" />
+          <h3 className="text-sm font-semibold text-gray-800">투표</h3>
+        </header>
+        {loading ? (
+          <p className="text-[12px] text-gray-400 py-6 text-center">불러오는 중…</p>
+        ) : (
+          <div className="py-4 text-center">
+            <p className="text-[12px] text-gray-500">아직 진행 중인 투표가 없어요.</p>
+            <button onClick={() => setModal("create")} className="mt-2 text-[12px] font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg px-3 py-1.5">
+              + 새 투표 만들기
+            </button>
+          </div>
+        )}
+        {error && <p className="text-[11px] text-red-500 mt-2">{error}</p>}
+        {modal === "create" && (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setModal(null)}>
+            <div className="bg-white rounded-xl p-5 w-96 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <h4 className="text-sm font-bold text-gray-800 mb-3">새 투표 만들기</h4>
+              <CreatePollForm onCreate={create} onCancel={() => setModal(null)} />
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section className="h-full rounded-2xl bg-white border border-gray-200 shadow-sm p-5 overflow-auto">
@@ -240,7 +305,7 @@ export const PollWidget: React.FC<Props> = ({ userName }) => {
         {!showResult && (
           <button
             onClick={submit}
-            disabled={selected.length === 0}
+            disabled={selected.length === 0 || busy}
             className="text-[12px] bg-amber-500 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-lg px-4 py-1.5 font-medium"
           >
             {poll.multiple && selected.length > 1 ? `${selected.length}개 투표하기` : "투표하기"}
@@ -250,13 +315,14 @@ export const PollWidget: React.FC<Props> = ({ userName }) => {
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-[11px] font-semibold text-amber-600">투표 완료 ✓</span>
             {!closed && (
-              <button onClick={cancel} className="text-[11px] text-gray-400 hover:text-red-500 underline">
+              <button onClick={cancel} disabled={busy} className="text-[11px] text-gray-400 hover:text-red-500 underline">
                 투표 취소
               </button>
             )}
           </div>
         )}
       </footer>
+      {error && <p className="text-[11px] text-red-500 mt-2">{error}</p>}
 
       {modal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setModal(null)}>
@@ -292,7 +358,7 @@ export const PollWidget: React.FC<Props> = ({ userName }) => {
                           {p.multiple && " · 복수 선택"}
                         </p>
                       </button>
-                      {p.createdBy === userName && (
+                      {isMine(p) && (
                         <button onClick={() => remove(p)} aria-label={`${p.title} 삭제`} className="px-2 text-[11px] text-gray-300 hover:text-red-500">
                           삭제
                         </button>
