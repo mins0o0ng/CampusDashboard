@@ -103,12 +103,17 @@ export function weekDates(monday: Date, count = DAY_NAMES.length): string[] {
   });
 }
 
-// "2026-10-05 ~ 2026-10-11" 또는 "월 (10/05)" 로 그 주 월요일을 찾는다.
+// 요일 머리행의 "월(10/05)" 를 우선 쓰고, 없으면 "2026-10-05 ~ 2026-10-11" 로 그 주 월요일을 찾는다.
+// (복사한 페이지의 다른 곳에 있는 날짜에 끌려가지 않도록 식단표 자체의 날짜를 먼저 본다)
 function findWeekMonday(text: string, year: number): Date | null {
-  const full = text.match(/(20\d{2})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})\s*~/);
-  if (full) return mondayOf(new Date(Number(full[1]), Number(full[2]) - 1, Number(full[3])));
   const short = text.match(/월\s*\(\s*(\d{1,2})\s*[./]\s*(\d{1,2})\s*\)/);
-  if (short) return mondayOf(new Date(year, Number(short[1]) - 1, Number(short[2])));
+  const full = text.match(/(20\d{2})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})\s*~/);
+  if (short) {
+    // 연도는 범위 표기에서 가져오고, 없으면 기준 연도를 쓴다
+    const y = full ? Number(full[1]) : year;
+    return mondayOf(new Date(y, Number(short[1]) - 1, Number(short[2])));
+  }
+  if (full) return mondayOf(new Date(Number(full[1]), Number(full[2]) - 1, Number(full[3])));
   return null;
 }
 
@@ -130,6 +135,21 @@ function slotOf(table: HTMLTableElement): Slot | null {
   const caption = (table.caption?.textContent ?? "").trim();
   const head = (table.textContent ?? "").replace(/\s+/g, "").slice(0, 6);
   return slotFromText(caption) ?? slotFromText(head);
+}
+
+// 요일 머리표(분류 | 월(10/05) | 화(10/06) …) — 메뉴가 아니라 날짜만 있다.
+function isDayHeader(table: HTMLTableElement): boolean {
+  const text = (table.textContent ?? "").replace(/\s+/g, "");
+  return /분류|구분/.test(text.slice(0, 4)) || (text.match(/[월화수목금토]\(\d{1,2}[./]\d{1,2}\)/g) ?? []).length >= 3 && !PRICE.test(text);
+}
+
+// 제목(caption)이 없는 끼니 표: 표 안의 제공 시간으로 끼니를 추정한다(17:00~ → 석식).
+// 화면에서 숨긴 <caption> 은 브라우저 복사(Ctrl+A/C)에 포함되지 않는 경우가 있다.
+function slotByTime(table: HTMLTableElement): Slot | null {
+  const t = (table.textContent ?? "").match(TIME);
+  if (!t) return null;
+  const hour = Number(t[1]);
+  return hour < 10 ? "조식" : hour < 16 ? "중식" : "석식";
 }
 
 // 표 하나에 끼니가 행으로 들어 있는 구조(행 첫 칸이 '중식', 나머지가 월~토) — 페이지 개편 대비
@@ -175,11 +195,28 @@ export function parseCoopPage(input: string, chosenMonday: Date): ImportedWeek {
     });
   };
 
+  const unlabeled: HTMLTableElement[] = [];
   for (const table of tables) {
     const slot = slotOf(table);
     const cells = slot ? dayCells(table) : null;
-    if (slot && cells) addCells(slot, cells);
-    else for (const [rowSlot, rowCells] of slotRows(table)) addCells(rowSlot, rowCells);
+    if (slot && cells) {
+      addCells(slot, cells);
+      continue;
+    }
+    const rows = slotRows(table);
+    if (rows.length > 0) rows.forEach(([rowSlot, rowCells]) => addCells(rowSlot, rowCells));
+    else if (!isDayHeader(table) && PRICE.test(table.textContent ?? "") && dayCells(table)) unlabeled.push(table);
+  }
+
+  // 제목 없는 끼니 표: 시간으로 먼저 정하고, 남은 표는 페이지 순서(조식→중식→석식)로 채운다.
+  if (unlabeled.length > 0) {
+    const order: Slot[] = unlabeled.length >= 3 ? ["조식", "중식", "석식"] : ["중식", "석식"];
+    const guessed = unlabeled.map(slotByTime);
+    const free = order.filter((o) => !guessed.includes(o));
+    unlabeled.forEach((table, i) => {
+      const slot = guessed[i] ?? free.shift() ?? order[Math.min(i, order.length - 1)];
+      addCells(slot, dayCells(table)!);
+    });
   }
   for (const k of Object.keys(days)) {
     days[k].sort((a, b) => SLOTS.indexOf(a.meal as Slot) - SLOTS.indexOf(b.meal as Slot));
