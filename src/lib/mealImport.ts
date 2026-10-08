@@ -59,6 +59,8 @@ export function parseDayCell(td: Element): MealItem[] {
     }
     if (cur.length) units.push(...cur.map((l) => [l]));
   }
+  // 시간대는 구간이 시작되는 메뉴에만 적혀 있다(예: 특식 11:00~13:30 … 일품 13:00~17:00).
+  // 그래서 읽은 시간을 이후 메뉴들에 이어서 적용한다.
   let time: string | null = null;
   const items: MealItem[] = [];
   for (const ls of units) {
@@ -77,10 +79,11 @@ export function parseDayCell(td: Element): MealItem[] {
       const rest = l.replace(TIME, "").trim();
       if (rest && !isLabel(rest)) names.push(rest);
     }
-    const name = cleanName(names.join(" "));
-    if (name) items.push({ name: name.slice(0, 60), price, time });
+    // 세트 메뉴(주메뉴 + 반찬)는 줄마다 한 가지라 " · " 로 잇는다.
+    const name = names.map(cleanName).filter(Boolean).join(" · ");
+    if (name) items.push({ name: name.slice(0, 80), price, time });
   }
-  return items.map((i) => ({ ...i, time })); // 시간대는 첫 메뉴에만 적혀 있으므로 전체에 적용
+  return items;
 }
 
 /* ==================== 날짜 ==================== */
@@ -225,6 +228,38 @@ export function parseCoopPage(input: string, chosenMonday: Date): ImportedWeek {
     ((t.caption?.textContent ?? "") || (t.textContent ?? "")).replace(/\s+/g, " ").trim().slice(0, 20)
   );
   return { dates, days, dateSource: found ? "page" : "chosen", tableCount, diag: { allTables: tables.length, heads } };
+}
+
+/* ==================== 생협 일괄 가져오기(북마클릿) ==================== */
+
+// 북마클릿이 생협 사이트에서 모든 식당 페이지를 모아 복사한 묶음.
+export const BUNDLE_TYPE = "campus-coop-bundle";
+
+export interface CoopBundle {
+  type: typeof BUNDLE_TYPE;
+  v: 1;
+  shops: { code: number; name: string; html: string }[];
+}
+
+export interface ImportedShop {
+  code: number;
+  name: string;
+  week: ImportedWeek;
+}
+
+export function tryParseBundle(text: string): CoopBundle | null {
+  const t = text.trim();
+  if (!t.startsWith("{") || !t.includes(BUNDLE_TYPE)) return null;
+  try {
+    const b = JSON.parse(t) as CoopBundle;
+    return b.type === BUNDLE_TYPE && Array.isArray(b.shops) ? b : null;
+  } catch {
+    return null;
+  }
+}
+
+export function parseBundle(bundle: CoopBundle, chosenMonday: Date): ImportedShop[] {
+  return bundle.shops.map((s) => ({ code: s.code, name: s.name, week: parseCoopPage(s.html, chosenMonday) }));
 }
 
 export { DAY_NAMES };

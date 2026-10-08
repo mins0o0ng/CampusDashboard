@@ -119,8 +119,9 @@ def _parse_li_cell(cell) -> list[MealItem]:
     첫 <li> 는 '특식<br/>10시~14:30<br/>육회비빔밥' 처럼 시간대가 섞여 있으므로 줄 단위로 분리한다.
     (src/lib/mealImport.ts 의 parseDayCell 과 같은 규칙)
     """
+    # 시간대는 구간이 시작되는 메뉴에만 적혀 있으므로, 읽은 시간을 이후 메뉴에 이어서 적용한다.
     time: Optional[str] = None
-    parsed: list[tuple[str, Optional[int]]] = []
+    items: list[MealItem] = []
     for li in cell.find_all("li"):
         for br in li.find_all("br"):
             br.replace_with("\n")
@@ -139,10 +140,12 @@ def _parse_li_cell(cell) -> list[MealItem]:
             rest = TIME_RE.sub("", line).strip()
             if rest and rest not in LABELS:
                 names.append(rest)
-        name = " ".join(names).replace("★", "").replace("☆", "").strip(" ·,")
+        # 세트 메뉴(주메뉴 + 반찬)는 줄마다 한 가지라 " · " 로 잇는다.
+        parts = [n.replace("★", "").replace("☆", "").strip(" ·,") for n in names]
+        name = " · ".join(p for p in parts if p)
         if name:
-            parsed.append((name[:60], price))
-    return [MealItem(name=n, price=p, time=time) for n, p in parsed]
+            items.append(MealItem(name=name[:80], price=price, time=time))
+    return items
 
 
 def parse_meals(html: str, day_index: int) -> list[Meal]:

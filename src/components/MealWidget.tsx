@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { staticData, RESTAURANTS, type MealPayload, type MealSection } from "../lib/staticData";
+import { staticData, type MealPayload, type MealSection } from "../lib/staticData";
+import { knownShops, myShopsStore, shopNameStore, type ShopNames } from "../lib/shops";
 import { dateKey, draftStore, fetchPublished, mergeTables, type MealTable } from "../lib/mealManual";
 import MealCalendar from "./MealCalendar";
 
@@ -41,11 +42,29 @@ const MealSections: React.FC<{ sections: MealSection[] }> = ({ sections }) => (
 );
 
 export const MealWidget: React.FC = () => {
-  const [shop, setShop] = useState<number>(RESTAURANTS[0].code);
   const [cache, setCache] = useState<Record<number, MealPayload | null>>({});
   const [published, setPublished] = useState<MealTable>({});
+  const [publishedShops, setPublishedShops] = useState<ShopNames>({});
   const [drafts, setDrafts] = useState<MealTable>(() => draftStore.load());
+  const [draftShopNames, setDraftShopNames] = useState<ShopNames>(() => shopNameStore.load());
+  const [mine, setMine] = useState<number[]>(() => myShopsStore.load());
+  const [shop, setShop] = useState<number>(() => myShopsStore.load()[0] ?? 35);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+
+  // 기본 3곳 + 게시본·이 브라우저에서 발견한 식당. 위젯 탭에는 "내 식당"만 보인다.
+  const shops = useMemo(() => knownShops(publishedShops, draftShopNames), [publishedShops, draftShopNames]);
+  const tabs = useMemo(() => {
+    const picked = shops.filter((s) => mine.includes(s.code));
+    return picked.length > 0 ? picked : shops.slice(0, 3);
+  }, [shops, mine]);
+
+  const toggleMine = (code: number) => {
+    const next = mine.includes(code) ? mine.filter((c) => c !== code) : [...mine, code];
+    myShopsStore.save(next);
+    setMine(next);
+    if (!next.includes(shop) && next.length > 0) setShop(next[0]);
+  };
 
   const data = shop in cache ? cache[shop] : undefined;
 
@@ -63,7 +82,9 @@ export const MealWidget: React.FC = () => {
   useEffect(() => {
     let alive = true;
     fetchPublished().then((f) => {
-      if (alive) setPublished(f.days);
+      if (!alive) return;
+      setPublished(f.days);
+      setPublishedShops(f.shops);
     });
     return () => {
       alive = false;
@@ -92,6 +113,16 @@ export const MealWidget: React.FC = () => {
             <span className="text-[10px] font-bold text-green-600 bg-green-50 rounded-full px-2.5 py-1">{dayLabel}요일</span>
           )}
           <button
+            onClick={() => setShowPicker(!showPicker)}
+            aria-label="내 식당 고르기"
+            title="내 식당 고르기"
+            className={`w-6 h-6 rounded-full border text-[11px] leading-none grid place-items-center ${
+              showPicker ? "border-green-400 text-green-600" : "border-gray-200 text-gray-400 hover:text-green-600 hover:border-green-300"
+            }`}
+          >
+            ⚙
+          </button>
+          <button
             onClick={() => setShowCalendar(true)}
             aria-label="월간 식단표"
             title="월간 식단표 · 직접 입력"
@@ -102,8 +133,22 @@ export const MealWidget: React.FC = () => {
         </div>
       </header>
 
+      {showPicker && (
+        <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-2.5">
+          <p className="text-[10px] text-gray-500 mb-1.5">위젯에 보일 식당을 고르세요 ({shops.length}곳 중)</p>
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {shops.map((s) => (
+              <label key={s.code} className="flex items-center gap-1 text-[11px] text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={mine.includes(s.code)} onChange={() => toggleMine(s.code)} className="accent-green-600" />
+                {s.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-1.5 mb-3 flex-wrap">
-        {RESTAURANTS.map((r) => (
+        {tabs.map((r) => (
           <button
             key={r.code}
             onClick={() => setShop(r.code)}
@@ -160,11 +205,18 @@ export const MealWidget: React.FC = () => {
       {showCalendar && createPortal(
         <MealCalendar
           shop={shop}
+          shops={shops}
           onShopChange={setShop}
           published={published}
+          publishedShops={publishedShops}
           drafts={drafts}
+          draftShopNames={draftShopNames}
           onDraftsChange={setDrafts}
-          onPublished={setPublished}
+          onDraftShopNamesChange={setDraftShopNames}
+          onPublished={(days, names) => {
+            setPublished(days);
+            setPublishedShops(names);
+          }}
           onClose={() => setShowCalendar(false)}
         />,
         document.body
