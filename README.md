@@ -47,10 +47,12 @@ GitHub 호스티드 러너는 미국 IP 라서 학식을 가져올 수 없습니
 - 같은 날짜·식당에 수동 식단이 있으면 자동 수집본보다 **우선** 표시됩니다.
 - 토큰이 없으면 **JSON 내보내기** 후 같은 경로에 직접 커밋해도 됩니다.
 
-### 🗳 투표 공유 (Supabase)
-`supabase/schema.sql` 을 Supabase 프로젝트에 적용하고 저장소 Variables 에 `SUPABASE_URL`·`SUPABASE_ANON_KEY` 를
+### 🗳 투표·식단 공유 (Supabase)
+`supabase/schema.sql`(투표)·`supabase/meals.sql`(식단)을 Supabase 프로젝트에 적용하고 저장소 Variables 에 `SUPABASE_URL`·`SUPABASE_ANON_KEY` 를
 넣으면, 투표가 모든 사용자에게 공유되고 규칙(1인 1회 참여·단일/복수 선택·마감·취소·작성자만 삭제)을 DB 함수가 강제합니다.
 설정이 없으면 기존처럼 브라우저 저장 모드로 동작합니다. 사용자 식별은 현재 익명 로그인(브라우저당 1명).
+식단은 누구나 게시할 수 있고(토큰 불필요, 즉시 반영), 모든 변경이 `meal_history` 에 남아 되돌릴 수 있습니다
+(되돌리는 SQL 은 `supabase/meals.sql` 맨 아래 참고). 이전에 토큰으로 올린 `meal_manual.json` 식단도 함께 보입니다.
 
 ## 이번 버전에 구현된 기능
 

@@ -11,6 +11,7 @@
 
 import type { MealItem, MealSection } from "./staticData";
 import type { ShopNames } from "./shops";
+import { ensureSession, supabase } from "./supabase";
 
 export type ShopDays = Record<string, MealSection[]>; // shopCode → 끼니 목록
 export type MealTable = Record<string, ShopDays>; // "YYYY-MM-DD" → 식당별 식단
@@ -60,7 +61,11 @@ export function menuToText(items: MealItem[]): string {
 
 /* ==================== 게시본(공유) ==================== */
 
-export async function fetchPublished(): Promise<ManualMealFile> {
+// Supabase 가 설정되면 식단은 DB 에서 공유된다(누구나 게시, 변경 기록은 DB 의 meal_history).
+// 설정이 없으면 기존처럼 저장소의 meal_manual.json 을 GitHub 토큰으로 커밋한다.
+export const sharedMeals = supabase !== null;
+
+async function fetchFile(): Promise<ManualMealFile> {
   try {
     const res = await fetch(import.meta.env.BASE_URL + "data/meal_manual.json", { cache: "no-cache" });
     if (!res.ok) return { updated_at: null, shops: {}, days: {} };
@@ -69,6 +74,45 @@ export async function fetchPublished(): Promise<ManualMealFile> {
   } catch {
     return { updated_at: null, shops: {}, days: {} };
   }
+}
+
+async function fetchShared(): Promise<{ days: MealTable; shops: ShopNames }> {
+  const { data, error } = await supabase!.rpc("get_meals");
+  if (error) throw new Error(error.message);
+  const d = (data ?? {}) as { days?: MealTable; shops?: ShopNames };
+  return { days: d.days ?? {}, shops: d.shops ?? {} };
+}
+
+// 게시본 = 저장소 파일(이전에 토큰으로 올린 것) + Supabase(공유 모드). 같은 날·식당은 Supabase 가 우선.
+export async function fetchPublished(): Promise<ManualMealFile> {
+  const file = await fetchFile();
+  if (!sharedMeals) return file;
+  try {
+    const shared = await fetchShared();
+    const days: MealTable = { ...file.days };
+    for (const [day, shops] of Object.entries(shared.days)) days[day] = { ...(days[day] ?? {}), ...shops };
+    return { updated_at: file.updated_at, shops: { ...file.shops, ...shared.shops }, days };
+  } catch {
+    return file; // Supabase 장애 시에도 파일 식단은 보인다
+  }
+}
+
+// 공유 모드 게시: 초안을 DB 에 올리고 최신 게시본을 돌려준다. 바로 반영된다(재배포 불필요).
+export async function publishShared(drafts: MealTable, newShops: ShopNames = {}): Promise<{ days: MealTable; shops: ShopNames }> {
+  await ensureSession();
+  const entries = Object.entries(drafts).flatMap(([day, shops]) =>
+    Object.entries(shops).map(([shop, sections]) => ({ day, shop: Number(shop), sections }))
+  );
+  // DB 함수는 한 번에 300건까지 받는다.
+  for (let i = 0; i < entries.length || i === 0; i += 300) {
+    const { error } = await supabase!.rpc("publish_meals", {
+      p_entries: entries.slice(i, i + 300),
+      p_shops: i === 0 ? newShops : {},
+    });
+    if (error) throw new Error(error.message);
+  }
+  const all = await fetchPublished();
+  return { days: all.days, shops: all.shops };
 }
 
 /* ==================== 임시저장(이 브라우저) ==================== */
