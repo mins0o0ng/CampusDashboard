@@ -37,15 +37,12 @@ jobs:
               tables = soup.find_all("table")
               if not tables:
                   continue
-              print("\n######## USING", ts, orig, "tables:", len(tables))
-              # 식단표 주변 구조(날짜 표기 포함)를 그대로 출력
-              for i, t in enumerate(tables[:4]):
-                  print(f"\n----- TABLE {i} (prev heading: {t.find_previous(['h1','h2','h3','h4','strong','p','caption']).get_text(' ', strip=True)[:60] if t.find_previous(['h1','h2','h3','h4','strong','p']) else None})")
-                  s = str(t)
-                  s = re.sub(r"\s+", " ", s)
-                  print(s[:3500])
-              body = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
-              for m in re.finditer(r"20\d\d[.\-/]\s?\d{1,2}[.\-/]\s?\d{1,2}", body):
-                  print("DATE CTX:", body[max(0, m.start()-60):m.end()+60]); 
+              import base64, gzip
+              print("\n######## USING", ts, orig, "bytes:", len(html))
+              blob = base64.b64encode(gzip.compress(html)).decode()
+              print("B64GZ_BEGIN")
+              for i in range(0, len(blob), 4000):
+                  print("B64:" + blob[i:i+4000])
+              print("B64GZ_END")
               break
           PY
