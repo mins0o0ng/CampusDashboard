@@ -25,52 +25,43 @@ jobs:
         run: |
           curl -sS -m 10 https://ipinfo.io/json || true
           echo; TZ=Asia/Seoul date
-      - name: Raw HTTP probe
+      - name: Probe alternative meal sources
         run: |
-          for shop in 35 36 46; do
-            echo "===== shop $shop ====="
-            curl -sS -m 20 -L -o "page_$shop.html" -D - \
-              -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36" \
-              -w "\nFINAL_URL=%{url_effective} STATUS=%{http_code} SIZE=%{size_download}\n" \
-              "https://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=$shop" || true
-          done
-      - name: Inspect HTML structure
-        run: |
-          python - <<'EOF'
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+          for u in \
+            "http://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=35" \
+            "https://www.knu.ac.kr/wbbs/wbbs/main/main.action" \
+            "https://dorm.knu.ac.kr/" \
+            "https://dorm.knu.ac.kr/_new_ver/newlife/05.php" \
+            "https://dorm.knu.ac.kr/scdorm/_new_ver/newlife/05.php" ; do
+            echo "===== $u"
+            curl -sS -m 20 -L -A "$UA" -o probe.html \
+              -w "FINAL_URL=%{url_effective} STATUS=%{http_code} SIZE=%{size_download}\n" "$u" || true
+            python - <<'PY'
           import re
           from bs4 import BeautifulSoup
-          for shop in (35, 36, 46):
-              raw = open(f"page_{shop}.html", "rb").read()
-              print(f"\n######## shop {shop}: {len(raw)} bytes")
-              for enc in ("utf-8", "euc-kr"):
-                  try:
-                      html = raw.decode(enc); print("decoded as", enc); break
-                  except UnicodeDecodeError:
-                      continue
-              else:
-                  html = raw.decode("utf-8", "replace")
-              soup = BeautifulSoup(html, "html.parser")
-              print("TITLE:", soup.title.get_text(strip=True) if soup.title else None)
-              low = html.lower()
-              print("login/sso hints:", [k for k in ("sso", "login", "로그인", "captcha", "cloudflare", "access denied") if k in low])
-              tables = soup.find_all("table")
-              print("TABLE COUNT:", len(tables))
-              for i, t in enumerate(tables):
-                  txt = re.sub(r"\s+", " ", t.get_text(" ", strip=True))
-                  rows = t.find_all("tr")
-                  print(f"--- table {i}: class={t.get('class')} caption={t.caption.get_text(strip=True) if t.caption else None}")
-                  print("    head60:", txt[:60])
-                  print("    row cell counts:", [len(r.find_all(['td', 'th'])) for r in rows][:8])
-                  for r in rows[:3]:
-                      print("    ROW:", [re.sub(r'\s+', ' ', c.get_text(' ', strip=True))[:50] for c in r.find_all(['td', 'th'])])
-              if not tables:
-                  body = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
-                  print("BODY TEXT (first 1500):", body[:1500])
-              print("RAW HEAD (first 1500 chars):"); print(html[:1500])
-          EOF
-      - name: Current scraper output
-        run: python scrapers/knu_meal_scraper.py --shop 35 --json || true
+          raw = open("probe.html", "rb").read()
+          html = None
+          for enc in ("utf-8", "euc-kr"):
+              try:
+                  html = raw.decode(enc); break
+              except UnicodeDecodeError:
+                  pass
+          html = html or raw.decode("utf-8", "replace")
+          soup = BeautifulSoup(html, "html.parser")
+          print("TITLE:", soup.title.get_text(strip=True) if soup.title else None, "| tables:", len(soup.find_all("table")))
+          seen = set()
+          for a in soup.find_all("a", href=True):
+              t = re.sub(r"\s+", " ", a.get_text(" ", strip=True))
+              if re.search(r"식단|식당|메뉴|학식", t) and (t, a["href"]) not in seen:
+                  seen.add((t, a["href"])); print("  LINK:", t[:30], "->", a["href"][:150])
+          body = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
+          for m in re.finditer(r"(조식|중식|석식)", body):
+              print("  MEAL CTX:", body[max(0, m.start()-40):m.start()+120]); break
+          PY
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: meal-pages
-          path: page_*.html
+          path: probe.html
+          if-no-files-found: ignore
