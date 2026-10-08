@@ -158,14 +158,14 @@ const App: React.FC = () => {
     (item: WidgetInstance) => {
       switch (item.kind) {
         case "timetable": return <TimetableWidget orgs={orgs} />;
-        case "poll": return <PollWidget />;
+        case "poll": return <PollWidget userName={session?.name ?? ""} />;
         case "meal": return <MealWidget />;
         case "notice": return <NoticeWidget />;
         case "custom":
           return item.spec ? <CustomWidget spec={item.spec} onChange={(s) => updateSpec(item.i, s)} /> : null;
       }
     },
-    [orgs, updateSpec]
+    [orgs, updateSpec, session]
   );
 
   const today = useMemo(

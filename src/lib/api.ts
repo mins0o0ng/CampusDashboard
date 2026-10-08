@@ -4,7 +4,7 @@
 // 사용법:
 //   import { timetableApi, pollApi } from "./lib/api";
 //   const classes = await timetableApi.list();
-//   const poll = await pollApi.vote("festival-2026", "o1");
+//   const poll = await pollApi.vote("festival-2026", ["o1"]);   // 복수 선택이면 여러 개
 // 환경변수 VITE_API_BASE 로 백엔드 주소 지정(기본 http://localhost:8000).
 
 import type { ClassBlock, Poll } from "../types";
@@ -67,9 +67,13 @@ export const timetableApi = {
 
 export const pollApi = {
   get: (pollId: string) => req<Poll>(`/api/poll/${pollId}`),
-  // 성공 시 갱신된 Poll, 중복/마감 시 ApiError(409) 를 throw → UI 에서 안내.
-  vote: (pollId: string, optionId: string) =>
-    req<Poll>(`/api/poll/${pollId}/vote`, { method: "POST", body: JSON.stringify({ option_id: optionId }) }),
+  create: (input: { title: string; options: string[]; deadline: string; multiple: boolean; total: number }) =>
+    req<Poll>("/api/poll", { method: "POST", body: JSON.stringify(input) }),
+  // 성공 시 갱신된 Poll. 이미 참여/마감이면 ApiError(409), 단일 선택에 여러 개면 422 → UI 에서 안내.
+  vote: (pollId: string, optionIds: string[]) =>
+    req<Poll>(`/api/poll/${pollId}/vote`, { method: "POST", body: JSON.stringify({ option_ids: optionIds }) }),
+  // 내 투표 취소(마감 전). 취소 후 다시 vote 할 수 있다.
+  cancel: (pollId: string) => req<Poll>(`/api/poll/${pollId}/vote`, { method: "DELETE" }),
 };
 
 /* ============================ 공지 / 학식 API ============================ */

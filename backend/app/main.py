@@ -134,7 +134,21 @@ def delete_class(class_id: str, user: str = Depends(current_user)) -> None:
 # ---------- 투표 ----------
 
 class VoteIn(BaseModel):
-    option_id: str
+    # 단일 선택은 option_id, 복수 선택은 option_ids 로 보낸다(둘 중 하나).
+    option_id: Optional[str] = None
+    option_ids: Optional[list[str]] = Field(default=None, max_length=20)
+
+    def picked(self) -> list[str]:
+        ids = self.option_ids if self.option_ids is not None else ([self.option_id] if self.option_id else [])
+        return list(dict.fromkeys(ids))  # 순서 유지 중복 제거
+
+
+class PollIn(BaseModel):
+    title: str = Field(min_length=1, max_length=80)
+    options: list[str] = Field(min_length=2, max_length=8)
+    deadline: date
+    multiple: bool = False
+    total: int = Field(default=0, ge=0)
 
 
 def _poll_payload(conn, poll_id: str, user: str) -> dict:
@@ -150,18 +164,59 @@ def _poll_payload(conn, poll_id: str, user: str) -> dict:
             "SELECT option_id, COUNT(*) FROM votes WHERE poll_id = ? GROUP BY option_id", (poll_id,)
         ).fetchall()
     )
-    my = conn.execute(
-        "SELECT option_id FROM votes WHERE poll_id = ? AND user_id = ?", (poll_id, user)
-    ).fetchone()
+    voters = conn.execute(
+        "SELECT COUNT(DISTINCT user_id) FROM votes WHERE poll_id = ?", (poll_id,)
+    ).fetchone()[0]
+    mine = [
+        r["option_id"]
+        for r in conn.execute(
+            "SELECT option_id FROM votes WHERE poll_id = ? AND user_id = ?", (poll_id, user)
+        ).fetchall()
+    ]
     return {
         "id": poll["id"],
         "title": poll["title"],
         "owner": poll["owner"],
         "total": poll["total"],
         "deadline": poll["deadline"],
-        "votedOptionId": my["option_id"] if my else None,
+        "multiple": bool(poll["multiple"]),
+        "createdBy": poll["created_by"],
+        "voters": voters,
+        "votedOptionIds": mine,
         "options": [{"id": o["id"], "label": o["label"], "votes": counts.get(o["id"], 0)} for o in options],
     }
+
+
+def _open_poll(conn, poll_id: str):
+    """존재하고 마감 전인 투표만 통과."""
+    poll = conn.execute("SELECT deadline, multiple FROM polls WHERE id = ?", (poll_id,)).fetchone()
+    if not poll:
+        raise HTTPException(status_code=404, detail="투표를 찾을 수 없습니다.")
+    if date.fromisoformat(poll["deadline"]) < date.today():
+        raise HTTPException(status_code=409, detail="마감된 투표입니다.")
+    return poll
+
+
+@app.post("/api/poll", status_code=201)
+def create_poll(body: PollIn, user: str = Depends(current_user)) -> dict:
+    """투표 만들기 — 만든 사람이 복수 선택 허용 여부를 정한다."""
+    labels = [o.strip() for o in body.options]
+    if any(not l for l in labels) or len(set(labels)) != len(labels):
+        raise HTTPException(status_code=422, detail="선택지는 비어 있거나 중복될 수 없습니다.")
+    if body.deadline < date.today():
+        raise HTTPException(status_code=422, detail="마감일이 이미 지났습니다.")
+    pid = "p" + uuid.uuid4().hex[:10]
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO polls(id, title, owner, total, deadline, multiple, created_by) VALUES(?,?,?,?,?,?,?)",
+            (pid, body.title.strip(), user, body.total, body.deadline.isoformat(), int(body.multiple), user),
+        )
+        for seq, label in enumerate(labels):
+            conn.execute(
+                "INSERT INTO poll_options(id, poll_id, label, seq) VALUES(?,?,?,?)",
+                (f"{pid}-o{seq + 1}", pid, label, seq),
+            )
+        return _poll_payload(conn, pid, user)
 
 
 @app.get("/api/poll/{poll_id}")
@@ -173,27 +228,43 @@ def get_poll(poll_id: str, user: str = Depends(current_user)) -> dict:
 
 @app.post("/api/poll/{poll_id}/vote")
 def cast_vote(poll_id: str, body: VoteIn, user: str = Depends(current_user)) -> dict:
-    """투표하기 — 서버측 1인 1표 + 마감 검사."""
+    """투표하기 — 서버측 1인 1회 참여 + 단일/복수 선택 검사 + 마감 검사.
+
+    다시 투표하려면 먼저 DELETE 로 취소한다.
+    """
+    picked = body.picked()
     with get_conn() as conn:
-        poll = conn.execute("SELECT deadline FROM polls WHERE id = ?", (poll_id,)).fetchone()
-        if not poll:
-            raise HTTPException(status_code=404, detail="투표를 찾을 수 없습니다.")
-        if date.fromisoformat(poll["deadline"]) < date.today():
-            raise HTTPException(status_code=409, detail="마감된 투표입니다.")
-        valid = conn.execute(
-            "SELECT 1 FROM poll_options WHERE id = ? AND poll_id = ?", (body.option_id, poll_id)
-        ).fetchone()
-        if not valid:
+        poll = _open_poll(conn, poll_id)
+        if not picked:
+            raise HTTPException(status_code=422, detail="선택지를 골라 주세요.")
+        if len(picked) > 1 and not poll["multiple"]:
+            raise HTTPException(status_code=422, detail="복수 선택이 허용되지 않은 투표입니다.")
+        valid = {
+            r["id"]
+            for r in conn.execute("SELECT id FROM poll_options WHERE poll_id = ?", (poll_id,)).fetchall()
+        }
+        if not set(picked) <= valid:
             raise HTTPException(status_code=422, detail="존재하지 않는 선택지입니다.")
         dup = conn.execute(
             "SELECT 1 FROM votes WHERE poll_id = ? AND user_id = ?", (poll_id, user)
         ).fetchone()
         if dup:
-            raise HTTPException(status_code=409, detail="이미 투표했습니다.")
-        conn.execute(
+            raise HTTPException(status_code=409, detail="이미 투표했습니다. 취소 후 다시 투표하세요.")
+        conn.executemany(
             "INSERT INTO votes(poll_id, option_id, user_id) VALUES(?,?,?)",
-            (poll_id, body.option_id, user),
+            [(poll_id, oid, user) for oid in picked],
         )
+        return _poll_payload(conn, poll_id, user)
+
+
+@app.delete("/api/poll/{poll_id}/vote")
+def cancel_vote(poll_id: str, user: str = Depends(current_user)) -> dict:
+    """내 투표 취소(마감 전까지) — 취소 후 다시 투표할 수 있다."""
+    with get_conn() as conn:
+        _open_poll(conn, poll_id)
+        cur = conn.execute("DELETE FROM votes WHERE poll_id = ? AND user_id = ?", (poll_id, user))
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="취소할 투표가 없습니다.")
         return _poll_payload(conn, poll_id, user)
 
 

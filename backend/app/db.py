@@ -33,7 +33,9 @@ CREATE TABLE IF NOT EXISTS polls (
     title     TEXT NOT NULL,
     owner     TEXT NOT NULL,
     total     INTEGER NOT NULL DEFAULT 0,
-    deadline  TEXT NOT NULL
+    deadline  TEXT NOT NULL,
+    multiple  INTEGER NOT NULL DEFAULT 0,   -- 1 이면 복수 선택 허용
+    created_by TEXT
 );
 
 CREATE TABLE IF NOT EXISTS poll_options (
@@ -43,11 +45,12 @@ CREATE TABLE IF NOT EXISTS poll_options (
     seq       INTEGER NOT NULL DEFAULT 0
 );
 
+-- 한 사람이 같은 선택지에 두 번 투표할 수는 없다. 단일/복수 선택 제한은 API 에서 검사한다.
 CREATE TABLE IF NOT EXISTS votes (
     poll_id   TEXT NOT NULL,
     option_id TEXT NOT NULL,
     user_id   TEXT NOT NULL,
-    PRIMARY KEY (poll_id, user_id)
+    PRIMARY KEY (poll_id, user_id, option_id)
 );
 """
 
@@ -64,9 +67,33 @@ SEED_POLL = {
 _schema_ready = False
 
 
+def _migrate(conn: sqlite3.Connection) -> None:
+    """복수 선택 도입 이전 DB 를 현재 스키마로 맞춘다(idempotent)."""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(polls)")}
+    if "multiple" not in cols:
+        conn.execute("ALTER TABLE polls ADD COLUMN multiple INTEGER NOT NULL DEFAULT 0")
+    if "created_by" not in cols:
+        conn.execute("ALTER TABLE polls ADD COLUMN created_by TEXT")
+    # 구버전 votes 는 PK 가 (poll_id, user_id) 라 복수 선택을 저장할 수 없다 → 테이블 재생성
+    pk = [r[1] for r in sorted(conn.execute("PRAGMA table_info(votes)"), key=lambda r: r[5]) if r[5] > 0]
+    if pk == ["poll_id", "user_id"]:
+        conn.executescript(
+            """
+            ALTER TABLE votes RENAME TO votes_old;
+            CREATE TABLE votes (
+                poll_id TEXT NOT NULL, option_id TEXT NOT NULL, user_id TEXT NOT NULL,
+                PRIMARY KEY (poll_id, user_id, option_id)
+            );
+            INSERT INTO votes SELECT poll_id, option_id, user_id FROM votes_old;
+            DROP TABLE votes_old;
+            """
+        )
+
+
 def _ensure_schema(conn: sqlite3.Connection) -> None:
     """스키마 + 시드 보장(idempotent)."""
     conn.executescript(SCHEMA)
+    _migrate(conn)
     exists = conn.execute("SELECT 1 FROM polls WHERE id = ?", (SEED_POLL["id"],)).fetchone()
     if not exists:
         conn.execute(
