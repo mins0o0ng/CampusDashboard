@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { staticData, type MealPayload, type MealSection } from "../lib/staticData";
 import { knownShops, myShopsStore, shopNameStore, type ShopNames } from "../lib/shops";
-import { dateKey, draftStore, fetchPublished, mergeTables, type MealTable } from "../lib/mealManual";
+import { dateKey, draftStore, fetchPublished, mergeTables, sharedMeals, type MealTable } from "../lib/mealManual";
 import MealCalendar from "./MealCalendar";
 
 const MAX_ITEMS = 5;
@@ -81,13 +81,18 @@ export const MealWidget: React.FC = () => {
 
   useEffect(() => {
     let alive = true;
-    fetchPublished().then((f) => {
-      if (!alive) return;
-      setPublished(f.days);
-      setPublishedShops(f.shops);
-    });
+    const load = () =>
+      fetchPublished().then((f) => {
+        if (!alive) return;
+        setPublished(f.days);
+        setPublishedShops(f.shops);
+      });
+    load();
+    // 공유 모드: 다른 사람이 올린 식단을 탭으로 돌아올 때 반영
+    if (sharedMeals) window.addEventListener("focus", load);
     return () => {
       alive = false;
+      window.removeEventListener("focus", load);
     };
   }, []);
 

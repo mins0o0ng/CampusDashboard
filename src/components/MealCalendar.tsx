@@ -12,6 +12,8 @@ import {
   menuToText,
   parseMenuText,
   publishDrafts,
+  publishShared,
+  sharedMeals,
   tokenStore,
   type MealTable,
 } from "../lib/mealManual";
@@ -213,18 +215,20 @@ export const MealCalendar: React.FC<Props> = ({
   );
 
   const publish = async () => {
-    if (!token.trim() || draftCount === 0) return;
+    if (draftCount === 0 || (!sharedMeals && !token.trim())) return;
     setBusy(true);
     setMessage(null);
-    tokenStore.save(token.trim());
+    if (!sharedMeals) tokenStore.save(token.trim());
     try {
-      const result = await publishDrafts(token.trim(), drafts, draftShopNames);
+      const result = sharedMeals
+        ? await publishShared(drafts, draftShopNames)
+        : await publishDrafts(token.trim(), drafts, draftShopNames);
       draftStore.save({});
       onDraftsChange({});
       shopNameStore.clear();
       onDraftShopNamesChange({});
       onPublished(result.days, result.shops);
-      setMessage({ ok: true, text: "게시 완료! 1~2분 뒤 사이트에 반영됩니다." });
+      setMessage({ ok: true, text: sharedMeals ? "게시 완료! 모두에게 바로 보입니다." : "게시 완료! 1~2분 뒤 사이트에 반영됩니다." });
       setShowPublish(false);
     } catch (e) {
       setMessage({ ok: false, text: e instanceof Error ? e.message : "게시에 실패했습니다." });
@@ -335,16 +339,16 @@ export const MealCalendar: React.FC<Props> = ({
                 JSON 내보내기
               </button>
               <button
-                onClick={() => setShowPublish(!showPublish)}
-                disabled={draftCount === 0}
+                onClick={() => (sharedMeals ? publish() : setShowPublish(!showPublish))}
+                disabled={draftCount === 0 || busy}
                 className="text-[12px] bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-lg px-3 py-1.5 font-medium"
               >
-                게시하기
+                {busy ? "게시 중…" : sharedMeals && draftCount > 0 ? `${draftCount}건 게시하기` : "게시하기"}
               </button>
             </div>
           </div>
 
-          {showPublish && (
+          {!sharedMeals && showPublish && (
             <div className="mt-3 rounded-lg bg-gray-50 border border-gray-200 p-3">
               <p className="text-[11px] text-gray-500 mb-2">
                 관리자 전용 — 이 저장소의 <b>Contents: Read and write</b> 권한만 준 GitHub Fine-grained 토큰을 입력하세요.
