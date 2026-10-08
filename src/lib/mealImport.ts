@@ -25,6 +25,8 @@ export interface ImportedWeek {
   days: Record<string, MealSection[]>; // 날짜 → 끼니
   dateSource: "page" | "chosen"; // 날짜를 페이지에서 찾았는지, 사용자가 고른 주인지
   tableCount: number; // 찾은 끼니 표 수(0 이면 식단표를 못 찾은 것)
+  // 실패 원인 파악용: 받은 내용에 표가 몇 개였고 각 표의 제목/첫 글자가 무엇이었는지
+  diag: { allTables: number; heads: string[] };
 }
 
 function fmtTime(m: RegExpMatchArray): string {
@@ -112,10 +114,34 @@ function findWeekMonday(text: string, year: number): Date | null {
 
 /* ==================== 페이지 → 일주일 ==================== */
 
-function slotOf(table: HTMLTableElement): (typeof SLOTS)[number] | null {
+type Slot = (typeof SLOTS)[number];
+const SLOT_ALIASES: [RegExp, Slot][] = [
+  [/조식|아침/, "조식"],
+  [/중식|점심/, "중식"],
+  [/석식|저녁/, "석식"],
+];
+
+function slotFromText(text: string): Slot | null {
+  return SLOT_ALIASES.find(([re]) => re.test(text))?.[1] ?? null;
+}
+
+// 표 하나가 끼니 하나인 구조(<caption>중식</caption>) — 2023 생협 페이지 형태
+function slotOf(table: HTMLTableElement): Slot | null {
   const caption = (table.caption?.textContent ?? "").trim();
   const head = (table.textContent ?? "").replace(/\s+/g, "").slice(0, 6);
-  return SLOTS.find((s) => caption.includes(s)) ?? SLOTS.find((s) => head.includes(s)) ?? null;
+  return slotFromText(caption) ?? slotFromText(head);
+}
+
+// 표 하나에 끼니가 행으로 들어 있는 구조(행 첫 칸이 '중식', 나머지가 월~토) — 페이지 개편 대비
+function slotRows(table: HTMLTableElement): [Slot, Element[]][] {
+  const out: [Slot, Element[]][] = [];
+  for (const row of Array.from(table.rows)) {
+    if (row.cells.length < 6) continue;
+    const first = (row.cells[0].textContent ?? "").replace(/\s+/g, "");
+    const slot = first.length <= 8 ? slotFromText(first) : null;
+    if (slot) out.push([slot, Array.from(row.cells).slice(1, 1 + DAY_NAMES.length)]);
+  }
+  return out;
 }
 
 // 메뉴 행 = 셀이 5개 이상이고 내용이 가장 많은 행. 앞에 '분류' 같은 짧은 라벨 칸이 있으면 뺀다.
@@ -126,7 +152,7 @@ function dayCells(table: HTMLTableElement): Element[] | null {
   if (!row) return null;
   const cells = Array.from(row.cells);
   const first = (cells[0].textContent ?? "").trim();
-  if (cells.length > 6 || (first.length < 8 && SLOTS.some((s) => first.includes(s)))) cells.shift();
+  if (cells.length > 6 || (first.length < 8 && slotFromText(first))) cells.shift();
   return cells.slice(0, DAY_NAMES.length);
 }
 
@@ -137,12 +163,9 @@ export function parseCoopPage(input: string, chosenMonday: Date): ImportedWeek {
   const dates = weekDates(found ?? chosenMonday);
   const days: Record<string, MealSection[]> = {};
   let tableCount = 0;
+  const tables = Array.from(doc.querySelectorAll("table"));
 
-  for (const table of Array.from(doc.querySelectorAll("table"))) {
-    const slot = slotOf(table);
-    if (!slot) continue;
-    const cells = dayCells(table);
-    if (!cells) continue;
+  const addCells = (slot: Slot, cells: Element[]) => {
     tableCount++;
     cells.forEach((td, i) => {
       const items = parseDayCell(td);
@@ -150,11 +173,21 @@ export function parseCoopPage(input: string, chosenMonday: Date): ImportedWeek {
       const list = (days[dates[i]] ??= []);
       if (!list.some((s) => s.meal === slot)) list.push({ meal: slot, items });
     });
+  };
+
+  for (const table of tables) {
+    const slot = slotOf(table);
+    const cells = slot ? dayCells(table) : null;
+    if (slot && cells) addCells(slot, cells);
+    else for (const [rowSlot, rowCells] of slotRows(table)) addCells(rowSlot, rowCells);
   }
   for (const k of Object.keys(days)) {
-    days[k].sort((a, b) => SLOTS.indexOf(a.meal as (typeof SLOTS)[number]) - SLOTS.indexOf(b.meal as (typeof SLOTS)[number]));
+    days[k].sort((a, b) => SLOTS.indexOf(a.meal as Slot) - SLOTS.indexOf(b.meal as Slot));
   }
-  return { dates, days, dateSource: found ? "page" : "chosen", tableCount };
+  const heads = tables.map((t) =>
+    ((t.caption?.textContent ?? "") || (t.textContent ?? "")).replace(/\s+/g, " ").trim().slice(0, 20)
+  );
+  return { dates, days, dateSource: found ? "page" : "chosen", tableCount, diag: { allTables: tables.length, heads } };
 }
 
 export { DAY_NAMES };

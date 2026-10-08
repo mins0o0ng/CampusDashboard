@@ -25,12 +25,30 @@ export const MealImportDialog: React.FC<Props> = ({ shop, onShopChange, onApply,
     const r = parseCoopPage(html, mon);
     if (r.tableCount === 0) {
       setResult(null);
-      setError("식단표(중식·석식 표)를 찾지 못했어요. 생협 식단 페이지 전체를 복사했는지 확인해 주세요.");
+      if (r.diag.allTables === 0 && !/<[a-z][\s\S]*>/i.test(html)) {
+        setError("표 구조 없이 글자만 복사됐어요. 생협 페이지에서 Ctrl+U(페이지 소스) → Ctrl+A → Ctrl+C 로 다시 복사해 주세요.");
+      } else {
+        setError(
+          `식단표(중식·석식 표)를 찾지 못했어요. 받은 표 ${r.diag.allTables}개` +
+            (r.diag.heads.length ? `: ${r.diag.heads.map((h) => `"${h}"`).join(", ")}` : "") +
+            " — 생협 페이지 구조가 바뀌었을 수 있어요."
+        );
+      }
       return;
     }
     setError("");
     setResult(r);
   }, []);
+
+  // 해석에 실패한 내용을 파일로 저장 → 파서 수정에 사용
+  const saveRaw = () => {
+    if (!raw) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([raw], { type: "text/html" }));
+    a.download = "coop_meal_pasted.html";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
 
   const accept = useCallback(
     (html: string) => {
@@ -105,23 +123,37 @@ export const MealImportDialog: React.FC<Props> = ({ shop, onShopChange, onApply,
           ))}
         </div>
 
-        <div
-          tabIndex={0}
+        {/* 편집 가능한 textarea 여야 Safari·모바일에서도 붙여넣기(길게 눌러 붙여넣기 포함)가 동작한다 */}
+        <textarea
+          rows={3}
+          value=""
           onPaste={onPaste}
-          className="rounded-lg border-2 border-dashed border-gray-300 focus:border-green-500 focus:outline-none bg-gray-50 text-center py-6 cursor-text"
-        >
-          <p className="text-[13px] text-gray-500">{raw ? "✓ 붙여넣음 — 다른 내용을 다시 붙여넣어도 돼요" : "여기를 누르고 Ctrl+V"}</p>
-          <p className="text-[10px] text-gray-400 mt-1">
-            페이지 소스(Ctrl+U)를 복사해도 되고,{" "}
-            <label className="text-green-600 underline cursor-pointer">
-              저장한 .html 파일 선택
-              <input type="file" accept=".html,.htm,text/html" onChange={onFile} className="hidden" />
-            </label>
-            도 돼요
-          </p>
-        </div>
+          onChange={(e) => {
+            // onPaste 를 거치지 않은 입력(일부 모바일 키보드) 대비
+            if (e.target.value.trim()) accept(e.target.value);
+          }}
+          placeholder={raw ? "✓ 붙여넣음 — 다른 내용을 다시 붙여넣어도 돼요" : "여기를 누르고 Ctrl+V (모바일은 길게 눌러 붙여넣기)"}
+          className="w-full rounded-lg border-2 border-dashed border-gray-300 focus:border-green-500 focus:outline-none bg-gray-50 text-center text-[13px] py-5 px-3 resize-none placeholder:text-gray-500"
+        />
+        <p className="text-[10px] text-gray-400 mt-1 text-center">
+          페이지 소스(Ctrl+U)를 복사해도 되고,{" "}
+          <label className="text-green-600 underline cursor-pointer">
+            저장한 .html 파일 선택
+            <input type="file" accept=".html,.htm,text/html" onChange={onFile} className="hidden" />
+          </label>
+          도 돼요
+        </p>
 
-        {error && <p className="text-[11px] text-red-500 mt-2">{error}</p>}
+        {error && (
+          <div className="mt-2">
+            <p className="text-[11px] text-red-500">{error}</p>
+            {raw && (
+              <button onClick={saveRaw} className="text-[11px] text-gray-500 underline mt-1">
+                붙여넣은 내용 파일로 저장 (개발자에게 보내 주시면 맞춰 드려요)
+              </button>
+            )}
+          </div>
+        )}
 
         {result && (
           <div className="mt-3">
