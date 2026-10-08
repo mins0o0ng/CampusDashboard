@@ -1,0 +1,72 @@
+name: Verify Supabase (temporary)
+
+# 임시: 저장소 Variables 로 실제 Supabase 프로젝트에 접속해 투표 규칙이 동작하는지 점검한다.
+# 만든 테스트 투표는 마지막에 삭제한다.
+
+on:
+  push:
+    branches: ["claude/**"]
+    paths: [".github/workflows/verify-supabase.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      SB_URL: ${{ vars.SUPABASE_URL }}
+      SB_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+    steps:
+      - run: pip install requests
+      - name: Check project
+        run: |
+          python - <<'PY'
+          import os, requests, datetime
+          url, key = os.environ["SB_URL"].rstrip("/"), os.environ["SB_KEY"]
+          print("SUPABASE_URL set:", bool(url), url)
+          print("SUPABASE_ANON_KEY set:", bool(key), key[:16] + "…" if key else "")
+          if not url or not key:
+              raise SystemExit("저장소 Variables 가 비어 있음")
+          base = {"apikey": key, "Content-Type": "application/json"}
+
+          def rpc(fn, args=None, token=None):
+              h = dict(base, Authorization=f"Bearer {token or key}")
+              r = requests.post(f"{url}/rest/v1/rpc/{fn}", json=args or {}, headers=h, timeout=30)
+              return r.status_code, (r.json() if r.text else None)
+
+          code, data = rpc("get_polls")
+          print("1 get_polls (비로그인):", code, "polls:", len(data) if isinstance(data, list) else data)
+
+          r = requests.post(f"{url}/auth/v1/signup", json={}, headers=base, timeout=30)
+          j = r.json()
+          tok = j.get("access_token")
+          print("2 익명 로그인:", r.status_code, "OK" if tok else j)
+          if not tok:
+              raise SystemExit("익명 로그인 실패 — Authentication 에서 Anonymous sign-ins 를 켰는지 확인")
+
+          tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
+          code, pid = rpc("create_poll", {"p_title": "연결 테스트(자동 삭제)", "p_owner": "점검봇", "p_options": ["A", "B", "C"],
+                                          "p_deadline": tomorrow, "p_multiple": True, "p_total": 0}, tok)
+          print("3 create_poll:", code, pid)
+          poll = next(p for p in rpc("get_polls", token=tok)[1] if p["id"] == pid)
+          o = [x["id"] for x in poll["options"]]
+          print("   mine:", poll["mine"], "multiple:", poll["multiple"])
+
+          print("4 cast_vote 2개:", rpc("cast_vote", {"p_poll": pid, "p_options": [o[0], o[2]]}, tok)[0])
+          print("5 재투표(차단 기대):", rpc("cast_vote", {"p_poll": pid, "p_options": [o[1]]}, tok))
+          poll = next(p for p in rpc("get_polls", token=tok)[1] if p["id"] == pid)
+          print("   voters:", poll["voters"], "votes:", [x["votes"] for x in poll["options"]], "mine:", len(poll["votedOptionIds"]))
+
+          h = dict(base, Authorization=f"Bearer {tok}", Prefer="return=minimal")
+          r = requests.post(f"{url}/rest/v1/votes", json={"poll_id": pid, "option_id": o[1], "user_id": "00000000-0000-0000-0000-000000000000"}, headers=h, timeout=30)
+          print("6 votes 직접 쓰기(차단 기대):", r.status_code, r.text[:120])
+
+          print("7 cancel_vote:", rpc("cancel_vote", {"p_poll": pid}, tok)[0])
+          poll = next(p for p in rpc("get_polls", token=tok)[1] if p["id"] == pid)
+          print("   voters after cancel:", poll["voters"])
+
+          r2 = requests.post(f"{url}/auth/v1/signup", json={}, headers=base, timeout=30).json()["access_token"]
+          print("8 다른 사용자가 삭제(차단 기대):", rpc("delete_poll", {"p_poll": pid}, r2))
+          print("9 만든 사람이 삭제(정리):", rpc("delete_poll", {"p_poll": pid}, tok)[0])
+          PY
