@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { RESTAURANTS, type MealSection } from "../lib/staticData";
-import MealImportDialog from "./MealImportDialog";
+import type { MealSection } from "../lib/staticData";
+import { shopNameStore, type Shop, type ShopNames } from "../lib/shops";
+import MealImportDialog, { type ImportEntry } from "./MealImportDialog";
 import {
   MEAL_SLOTS,
   countDrafts,
@@ -19,11 +20,15 @@ const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"];
 
 interface Props {
   shop: number;
+  shops: Shop[]; // 알려진 모든 식당(기본 + 발견)
   onShopChange: (shop: number) => void;
   published: MealTable;
+  publishedShops: ShopNames;
   drafts: MealTable;
+  draftShopNames: ShopNames; // 이 브라우저에서 새로 발견한(게시 전) 식당 이름
   onDraftsChange: (drafts: MealTable) => void;
-  onPublished: (table: MealTable) => void;
+  onDraftShopNamesChange: (names: ShopNames) => void;
+  onPublished: (days: MealTable, shops: ShopNames) => void;
   onClose: () => void;
 }
 
@@ -124,7 +129,19 @@ const DayEditor: React.FC<EditorProps> = ({ day, shopName, initial, onSave, onCl
 
 /* ==================== 월력형 식단표 ==================== */
 
-export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, drafts, onDraftsChange, onPublished, onClose }) => {
+export const MealCalendar: React.FC<Props> = ({
+  shop,
+  shops,
+  onShopChange,
+  published,
+  publishedShops,
+  drafts,
+  draftShopNames,
+  onDraftsChange,
+  onDraftShopNamesChange,
+  onPublished,
+  onClose,
+}) => {
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
@@ -140,7 +157,7 @@ export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, d
   const cells = useMemo(() => monthCells(cursor.year, cursor.month), [cursor]);
   const merged = useMemo(() => mergeTables(published, drafts), [published, drafts]);
   const draftCount = countDrafts(drafts);
-  const shopName = RESTAURANTS.find((r) => r.code === shop)?.name ?? String(shop);
+  const shopName = shops.find((r) => r.code === shop)?.name ?? String(shop);
 
   const move = (delta: number) =>
     setCursor(({ year, month }) => {
@@ -164,21 +181,35 @@ export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, d
     [drafts, published, shop, onDraftsChange]
   );
 
-  // 붙여넣기로 가져온 한 주치를 한 번에 임시저장한다(같은 날짜·식당은 덮어씀).
-  const applyWeek = useCallback(
-    (days: Record<string, MealSection[]>) => {
+  // 가져온 식단(한 식당 또는 북마클릿으로 모은 여러 식당)을 한 번에 임시저장한다(같은 날짜·식당은 덮어씀).
+  const applyImport = useCallback(
+    (entries: ImportEntry[], names: ShopNames) => {
       const next: MealTable = { ...drafts };
-      for (const [day, sections] of Object.entries(days)) next[day] = { ...(next[day] ?? {}), [shop]: sections };
+      let dayCount = 0;
+      for (const { shop: code, days } of entries) {
+        for (const [day, sections] of Object.entries(days)) {
+          next[day] = { ...(next[day] ?? {}), [code]: sections };
+          dayCount++;
+        }
+      }
       draftStore.save(next);
       onDraftsChange(next);
-      const first = Object.keys(days).sort()[0];
+      if (Object.keys(names).length > 0) onDraftShopNamesChange(shopNameStore.add(names));
+      const first = entries.flatMap((e) => Object.keys(e.days)).sort()[0];
       if (first) {
         const [y, m] = first.split("-").map(Number);
         setCursor({ year: y, month: m - 1 });
       }
-      setMessage({ ok: true, text: `${Object.keys(days).length}일치 식단을 임시저장했어요. 확인 후 "게시하기"를 눌러 주세요.` });
+      if (entries.length === 1 && entries[0].shop !== shop) onShopChange(entries[0].shop);
+      setMessage({
+        ok: true,
+        text:
+          entries.length > 1
+            ? `식당 ${entries.length}곳, 총 ${dayCount}일치 식단을 임시저장했어요. 확인 후 "게시하기"를 눌러 주세요.`
+            : `${dayCount}일치 식단을 임시저장했어요. 확인 후 "게시하기"를 눌러 주세요.`,
+      });
     },
-    [drafts, shop, onDraftsChange]
+    [drafts, shop, onDraftsChange, onDraftShopNamesChange, onShopChange]
   );
 
   const publish = async () => {
@@ -187,10 +218,12 @@ export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, d
     setMessage(null);
     tokenStore.save(token.trim());
     try {
-      const table = await publishDrafts(token.trim(), drafts);
+      const result = await publishDrafts(token.trim(), drafts, draftShopNames);
       draftStore.save({});
       onDraftsChange({});
-      onPublished(table);
+      shopNameStore.clear();
+      onDraftShopNamesChange({});
+      onPublished(result.days, result.shops);
       setMessage({ ok: true, text: "게시 완료! 1~2분 뒤 사이트에 반영됩니다." });
       setShowPublish(false);
     } catch (e) {
@@ -201,7 +234,7 @@ export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, d
   };
 
   const download = () => {
-    const blob = new Blob([exportJson(merged)], { type: "application/json" });
+    const blob = new Blob([exportJson(merged, { ...publishedShops, ...draftShopNames })], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "meal_manual.json";
@@ -221,7 +254,7 @@ export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, d
             <button onClick={() => move(1)} aria-label="다음 달" className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50">›</button>
           </div>
           <div className="flex gap-1.5 flex-wrap">
-            {RESTAURANTS.map((r) => (
+            {shops.map((r) => (
               <button
                 key={r.code}
                 onClick={() => onShopChange(r.code)}
@@ -340,7 +373,7 @@ export const MealCalendar: React.FC<Props> = ({ shop, onShopChange, published, d
       </div>
 
       {importing && (
-        <MealImportDialog shop={shop} onShopChange={onShopChange} onApply={applyWeek} onClose={() => setImporting(false)} />
+        <MealImportDialog shop={shop} shops={shops} onShopChange={onShopChange} onApply={applyImport} onClose={() => setImporting(false)} />
       )}
       {editing && (
         <DayEditor

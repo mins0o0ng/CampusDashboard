@@ -23,3 +23,16 @@ def test_dinner_time_applies_to_all_items():
 def test_holiday_cell_kept_as_note():
     meals = m.parse_meals(HTML, 1)  # 화: 현충일
     assert [(x.meal, x.items[0].name, x.items[0].price) for x in meals] == [("중식", "현충일", None), ("석식", "현충일", None)]
+
+
+def test_time_applies_from_its_item_onward_and_set_menu_joined():
+    html = """<p>2026-10-05 ~ 2026-10-11</p><table><caption>중식</caption><tr>
+    <td><ul class="menu_im">
+      <li>특식<br/>(11:00~13:30)<br/>돈코츠라멘<br/>소떡소떡<p>￦ 6,500</p></li>
+      <li>일품<br/>(13:00~17:00)<br/>오삼비빔밥<p>￦ 5,000</p></li>
+    </ul></td><td></td><td></td><td></td><td></td><td></td></tr></table>"""
+    lunch = m.parse_meals(html, 0)[0]
+    assert [(i.name, i.price, i.time) for i in lunch.items] == [
+        ("돈코츠라멘 · 소떡소떡", 6500, "11:00~13:30"),
+        ("오삼비빔밥", 5000, "13:00~17:00"),
+    ]

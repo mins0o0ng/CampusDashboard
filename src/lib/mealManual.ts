@@ -3,19 +3,21 @@
 //       가장 확실한 출처라서, 같은 날짜·식당에 수동 식단이 있으면 수집본보다 우선한다.
 //
 // 저장 구조(사이트 자체 테이블 = public/data/meal_manual.json):
-//   { updated_at, days: { "YYYY-MM-DD": { "35": MealSection[], "36": [...] } } }
+//   { updated_at, shops: { "35": "학생식당", ... }, days: { "YYYY-MM-DD": { "35": MealSection[], "36": [...] } } }
 //
 // 흐름: 편집 → 이 브라우저에 임시저장(localStorage) → "게시" 시 GitHub API 로 위 JSON 을
 //       main 에 커밋 → push 트리거로 Pages 재배포 → 모든 방문자에게 반영.
 //       서버가 없는 정적 사이트라 게시 권한은 관리자의 GitHub 토큰으로 대신한다.
 
 import type { MealItem, MealSection } from "./staticData";
+import type { ShopNames } from "./shops";
 
 export type ShopDays = Record<string, MealSection[]>; // shopCode → 끼니 목록
 export type MealTable = Record<string, ShopDays>; // "YYYY-MM-DD" → 식당별 식단
 
 export interface ManualMealFile {
   updated_at: string | null;
+  shops: ShopNames; // 일괄 가져오기로 발견한 식당 이름(기본 3곳 외)
   days: MealTable;
 }
 
@@ -61,11 +63,11 @@ export function menuToText(items: MealItem[]): string {
 export async function fetchPublished(): Promise<ManualMealFile> {
   try {
     const res = await fetch(import.meta.env.BASE_URL + "data/meal_manual.json", { cache: "no-cache" });
-    if (!res.ok) return { updated_at: null, days: {} };
-    const json = (await res.json()) as ManualMealFile;
-    return { updated_at: json.updated_at ?? null, days: json.days ?? {} };
+    if (!res.ok) return { updated_at: null, shops: {}, days: {} };
+    const json = (await res.json()) as Partial<ManualMealFile>;
+    return { updated_at: json.updated_at ?? null, shops: json.shops ?? {}, days: json.days ?? {} };
   } catch {
-    return { updated_at: null, days: {} };
+    return { updated_at: null, shops: {}, days: {} };
   }
 }
 
@@ -116,10 +118,10 @@ export function mergeTables(base: MealTable, drafts: MealTable): MealTable {
   return out;
 }
 
-export function exportJson(table: MealTable): string {
+export function exportJson(table: MealTable, shops: ShopNames = {}): string {
   const sorted: MealTable = {};
   for (const day of Object.keys(table).sort()) sorted[day] = table[day];
-  const file: ManualMealFile = { updated_at: new Date().toISOString(), days: sorted };
+  const file: ManualMealFile = { updated_at: new Date().toISOString(), shops, days: sorted };
   return JSON.stringify(file, null, 2) + "\n";
 }
 
@@ -155,8 +157,12 @@ function fromBase64Utf8(b64: string): string {
   return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
 }
 
-// 저장소의 최신 게시본에 초안을 병합해 커밋한다. 배포 반영까지 1~2분 걸린다.
-export async function publishDrafts(token: string, drafts: MealTable): Promise<MealTable> {
+// 저장소의 최신 게시본에 초안(과 새로 발견한 식당 이름)을 병합해 커밋한다. 배포 반영까지 1~2분 걸린다.
+export async function publishDrafts(
+  token: string,
+  drafts: MealTable,
+  newShops: ShopNames = {}
+): Promise<{ days: MealTable; shops: ShopNames }> {
   const api = `https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`;
   const headers = {
     Authorization: `Bearer ${token}`,
@@ -167,25 +173,29 @@ export async function publishDrafts(token: string, drafts: MealTable): Promise<M
   // 배포본은 수 분 늦을 수 있으므로, 덮어쓰기 전에 저장소의 현재 파일을 기준으로 병합한다.
   let sha: string | undefined;
   let base: MealTable = {};
+  let baseShops: ShopNames = {};
   const cur = await fetch(`${api}?ref=${BRANCH}`, { headers, cache: "no-store" });
   if (cur.ok) {
     const json = await cur.json();
     sha = json.sha;
-    base = (JSON.parse(fromBase64Utf8(json.content)) as ManualMealFile).days ?? {};
+    const file = JSON.parse(fromBase64Utf8(json.content)) as Partial<ManualMealFile>;
+    base = file.days ?? {};
+    baseShops = file.shops ?? {};
   } else if (cur.status !== 404) {
     throw new Error(publishError(cur.status));
   }
 
   const merged = mergeTables(base, drafts);
+  const shops = { ...baseShops, ...newShops };
   const days = Object.keys(drafts).sort();
   const message = `chore(meal): 식단 수동 업로드 (${days[0]}${days.length > 1 ? ` 외 ${days.length - 1}일` : ""})`;
   const res = await fetch(api, {
     method: "PUT",
     headers,
-    body: JSON.stringify({ message, content: toBase64Utf8(exportJson(merged)), sha, branch: BRANCH }),
+    body: JSON.stringify({ message, content: toBase64Utf8(exportJson(merged, shops)), sha, branch: BRANCH }),
   });
   if (!res.ok) throw new Error(publishError(res.status));
-  return merged;
+  return { days: merged, shops };
 }
 
 function publishError(status: number): string {
