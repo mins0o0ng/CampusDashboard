@@ -42,7 +42,10 @@ export interface Poll {
   options: PollOption[];
   total: number;       // 전체 투표 가능 인원
   deadline: string;    // ISO 날짜 (마감일)
-  votedOptionId?: string | null; // 내가 투표한 선택지. 백엔드는 null, 로컬은 undefined
+  multiple?: boolean;  // 복수 선택 허용(투표를 만든 사람이 설정)
+  voters?: number;     // 참여 인원. 복수 선택이면 득표 합 ≠ 인원이라 따로 센다(없으면 득표 합)
+  createdBy?: string;  // 투표를 만든 사람(직접 만든 투표만)
+  votedOptionIds?: string[]; // 내가 고른 선택지(복수 선택이면 여러 개). 비어 있으면 미참여
 }
 
 /* ==================== 커스텀(AI 생성) 위젯 ==================== */

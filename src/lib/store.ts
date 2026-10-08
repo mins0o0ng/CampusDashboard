@@ -121,26 +121,80 @@ function migratePolls(): Poll[] {
   return merged;
 }
 
+// 단일 선택 시절 저장분(votedOptionId)을 votedOptionIds 로 옮긴다.
+function normalize(p: Poll & { votedOptionId?: string | null }): Poll {
+  const { votedOptionId, ...rest } = p;
+  if (rest.votedOptionIds || !votedOptionId) return rest;
+  return { ...rest, votedOptionIds: [votedOptionId] };
+}
+
+export interface NewPoll {
+  title: string;
+  options: string[];
+  deadline: string;
+  multiple: boolean;
+  total: number;
+}
+
 export const pollStore = {
   loadAll(): Poll[] {
     const stored = read<Poll[] | null>(POLLS_KEY, null);
-    if (stored && stored.length > 0) return stored;
-    return migratePolls();
+    if (stored && stored.length > 0) return stored.map(normalize);
+    return migratePolls().map(normalize);
   },
   saveAll(polls: Poll[]): void {
     write(POLLS_KEY, polls);
   },
-  vote(polls: Poll[], pollId: string, optionId: string): Poll[] {
+  // 단일 선택 투표는 선택지 1개만 받는다. 이미 참여했거나 마감이면 그대로 둔다(취소 후 재투표).
+  vote(polls: Poll[], pollId: string, optionIds: string[]): Poll[] {
     const next = polls.map((p) => {
-      if (p.id !== pollId || p.votedOptionId || isClosed(p)) return p;
+      if (p.id !== pollId || hasVoted(p) || isClosed(p)) return p;
+      const picked = [...new Set(optionIds)].filter((id) => p.options.some((o) => o.id === id));
+      if (picked.length === 0 || (!p.multiple && picked.length > 1)) return p;
       return {
         ...p,
-        votedOptionId: optionId,
-        options: p.options.map((o) =>
-          o.id === optionId ? { ...o, votes: o.votes + 1 } : o
-        ),
+        voters: voterCount(p) + 1,
+        votedOptionIds: picked,
+        options: p.options.map((o) => (picked.includes(o.id) ? { ...o, votes: o.votes + 1 } : o)),
       };
     });
+    this.saveAll(next);
+    return next;
+  },
+  // 내 투표를 취소한다(마감 전까지). 취소하면 다시 투표할 수 있다.
+  cancel(polls: Poll[], pollId: string): Poll[] {
+    const next = polls.map((p) => {
+      if (p.id !== pollId || !hasVoted(p) || isClosed(p)) return p;
+      const mine = p.votedOptionIds ?? [];
+      return {
+        ...p,
+        voters: Math.max(0, voterCount(p) - 1),
+        votedOptionIds: [],
+        options: p.options.map((o) => (mine.includes(o.id) ? { ...o, votes: Math.max(0, o.votes - 1) } : o)),
+      };
+    });
+    this.saveAll(next);
+    return next;
+  },
+  create(polls: Poll[], input: NewPoll, createdBy: string): Poll[] {
+    const poll: Poll = {
+      id: `p${Date.now()}`,
+      title: input.title.trim(),
+      owner: createdBy,
+      createdBy,
+      total: input.total,
+      deadline: input.deadline,
+      multiple: input.multiple,
+      voters: 0,
+      votedOptionIds: [],
+      options: input.options.map((label, i) => ({ id: `o${i + 1}`, label: label.trim(), votes: 0 })),
+    };
+    const next = [poll, ...polls];
+    this.saveAll(next);
+    return next;
+  },
+  remove(polls: Poll[], pollId: string): Poll[] {
+    const next = polls.filter((p) => p.id !== pollId);
     this.saveAll(next);
     return next;
   },
@@ -163,8 +217,18 @@ export function totalVotes(poll: Poll): number {
   return poll.options.reduce((s, o) => s + o.votes, 0);
 }
 
+export function hasVoted(poll: Poll): boolean {
+  return (poll.votedOptionIds?.length ?? 0) > 0;
+}
+
+// 참여 인원. 단일 선택은 득표 합과 같고, 복수 선택은 따로 센 값을 쓴다.
+export function voterCount(poll: Poll): number {
+  return poll.voters ?? totalVotes(poll);
+}
+
+// 비율의 분모: 단일 선택은 전체 득표, 복수 선택은 참여 인원(선택지별 합이 100%를 넘을 수 있음).
 export function percent(poll: Poll, optionId: string, precomputedTotal?: number): number {
-  const total = precomputedTotal ?? totalVotes(poll);
+  const total = precomputedTotal ?? (poll.multiple ? voterCount(poll) : totalVotes(poll));
   if (total === 0) return 0;
   const v = poll.options.find((o) => o.id === optionId)?.votes ?? 0;
   return Math.round((v / total) * 100);
