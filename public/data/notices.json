@@ -1,7 +1,7 @@
 {
   "board": "공지사항",
   "board_code": 1,
-  "scraped_at": "2026-11-22T00:50:33",
+  "scraped_at": "2026-11-23T01:18:58",
   "keywords": [],
   "count": 10,
   "notices": [
@@ -10,7 +10,7 @@
       "title": "[긴급 보안 안내] 미승인 외부 AI 서비스(GPAI)의 LMS 계정 입력 금지",
       "author": "정보화본부",
       "date": "2026/11/17",
-      "views": 563,
+      "views": 618,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338793&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -22,7 +22,7 @@
       "title": "정보화본부 운영 정보시스템 사설IP 전환에 따른 서비스 중단 안내",
       "author": "정보화본부",
       "date": "2026/11/13",
-      "views": 805,
+      "views": 839,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338773&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -34,7 +34,7 @@
       "title": "2027학년도 경북대학교 어린이집 원아모집 및 입학설명",
       "author": "총무과",
       "date": "2026/10/23",
-      "views": 1432,
+      "views": 1475,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338642&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -46,7 +46,7 @@
       "title": "[긴급] 경북대학교 직원 사칭 물품 구매 및 견적 사기 주의 안내",
       "author": "시설과",
       "date": "2026/06/09",
-      "views": 9523,
+      "views": 9549,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1337591&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=top&menu_idx=67",
       "has_file": false,
       "is_new": false,
@@ -54,11 +54,11 @@
       "matched": []
     },
     {
-      "no": "256",
+      "no": "254",
       "title": "개교 80주년 기념 첨성인 대학원생 논문 경진대회 수상자 발표",
       "author": "연구진흥과",
       "date": "2026/11/20",
-      "views": 295,
+      "views": 391,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338820&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -66,11 +66,11 @@
       "matched": []
     },
     {
-      "no": "255",
+      "no": "253",
       "title": "2026학년도 제4회 KNU 융합전공 설명회 개최 안내",
       "author": "교무과",
       "date": "2026/11/20",
-      "views": 303,
+      "views": 393,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338812&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -78,11 +78,11 @@
       "matched": []
     },
     {
-      "no": "254",
+      "no": "252",
       "title": "대구혁신공동연구센터 운영 규정 제정(안) 공고 및 의견조회",
       "author": "기획조정과",
       "date": "2026/11/19",
-      "views": 153,
+      "views": 189,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338807&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -90,11 +90,11 @@
       "matched": []
     },
     {
-      "no": "253",
+      "no": "251",
       "title": "교무과 소관 규정 일부개정안 공고 및 의견조회 알림",
       "author": "교무과",
       "date": "2026/11/18",
-      "views": 230,
+      "views": 274,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338800&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -102,11 +102,11 @@
       "matched": []
     },
     {
-      "no": "252",
+      "no": "250",
       "title": "「경북대학교 교양교육과정 운영 지침 일부 개정(안)」 공고",
       "author": "기초교육센터",
       "date": "2026/11/18",
-      "views": 243,
+      "views": 292,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338796&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
@@ -114,11 +114,11 @@
       "matched": []
     },
     {
-      "no": "251",
+      "no": "249",
       "title": "학사과 소관 규정 개정(안) 공고 및 의견조회",
       "author": "학사과",
       "date": "2026/11/17",
-      "views": 258,
+      "views": 292,
       "url": "https://www.knu.ac.kr/wbbs/wbbs/bbs/btin/viewBtin.action?bbs_cde=1&btin.bbs_cde=1&btin.doc_no=1338794&btin.appl_no=000000&btin.page=1&btin.search_type=&btin.search_text=&popupDeco=&btin.note_div=row&menu_idx=67",
       "has_file": true,
       "is_new": false,
